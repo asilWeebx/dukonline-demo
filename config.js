@@ -3,5 +3,5 @@
 // Kalitni ERP SuperAdmin panelidan olasiz (tashkilot → Online Store).
 window.STORE_CONFIG = {
   API_URL: 'https://api.dukonline.uz/api',              // ERP Storefront API manzili
-  STOREFRONT_KEY: 'sk_live__eee9eed8',    // tashkilot + filial kaliti
+  STOREFRONT_KEY: 'sk_live_d82e2a2934_c69cd833',    // tashkilot + filial kaliti
 }
