@@ -835,6 +835,47 @@
     /* product card clickable */
     .product-item { cursor: pointer; }
     .product-img-wrap { cursor: zoom-in; }
+
+    /* ── Banner Carousel ──────────────────────── */
+    .banner-section { max-width: 1400px; margin: 24px auto 0; padding: 0 24px; }
+    .banner-carousel {
+      position: relative; border-radius: 18px; overflow: hidden;
+      aspect-ratio: 2 / 1; background: #f5f5f5;
+      touch-action: pan-y;
+    }
+    .banner-track {
+      display: flex; height: 100%;
+      transition: transform .5s cubic-bezier(.4,0,.2,1);
+    }
+    .banner-slide { flex: 0 0 100%; height: 100%; }
+    .banner-slide img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .banner-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 38px; height: 38px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,.9); color: #333;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.18);
+      opacity: 0; transition: opacity .2s, background .15s;
+    }
+    .banner-arrow:hover { background: #fff; }
+    .banner-carousel:hover .banner-arrow { opacity: 1; }
+    .banner-arrow.prev { left: 16px; }
+    .banner-arrow.next { right: 16px; }
+    .banner-dots {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 6px; z-index: 2;
+    }
+    .banner-dot {
+      width: 7px; height: 7px; border-radius: 50%; padding: 0; border: none;
+      background: rgba(255,255,255,.55); cursor: pointer; transition: all .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
+    }
+    .banner-dot.active { width: 22px; border-radius: 4px; background: #fff; }
+    @media (max-width: 640px) {
+      .banner-section  { padding: 0 16px; margin-top: 16px; }
+      .banner-carousel { aspect-ratio: 16 / 10; border-radius: 14px; }
+      .banner-arrow    { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -857,6 +898,12 @@ const fmtQty = n => Number.isInteger(+n) ? String(+n) : String(+(+n).toFixed(3))
 const PM_LABELS = { cash:'Naqd', card:'Karta', transfer:"O'tkazma", credit:'Nasiya', mixed:'Aralash', click:'Click', payme:'Payme', uzum:'Uzum', humo:'Humo', uzcard:'UzCard', installment:"Bo'lib to'lash", exchange_credit:'Ayirboshlash' }
 const pmLabel = m => PM_LABELS[m] || (m || '—')
 const media = u => !u ? '' : u.startsWith('http') ? u : API_URL.replace(/\/api\/?$/,'') + u
+// Hozircha do'konda banner yuklanmagan bo'lsa ko'rsatiladigan namuna rasmlar
+const DEMO_BANNERS = [
+  'banners_img/4d82f95b9703cc6d055e0d64e25ee322.jpg',
+  'banners_img/IMG_20260824_170904_808(1).jpg',
+  'banners_img/imgi_6_Gemini_Generated_Image_bb84u4bb84u4bb84_1.jpg',
+].map(encodeURI)
 const api   = async (p,o={}) => { const r=await fetch(API_URL+p,{...o,headers:HDR}); if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||'Xatolik'); return r.json() }
 
 // ── SVG Icons ──────────────────────────────────────────────────────────
@@ -1592,6 +1639,60 @@ function CustomerPortal({ open, onClose, customer, onLogout }) {
 }
 
 // ── App ─────────────────────────────────────────────────────────────────────
+// ── BannerCarousel ────────────────────────────────────────────────────
+// `banners` — rasm URL'lari ro'yxati. dukonline.uz "Online do'kon → Bannerlar"
+// bo'limidan yuklangan rasmlar bo'lsa o'shalar, aks holda mahalliy namuna rasmlar.
+function BannerCarousel({ banners }) {
+  const [idx, setIdx] = useState(0)
+  const timerRef = useRef(null)
+  const dragRef  = useRef({ x: 0, active: false })
+  const n = banners.length
+
+  const resume = () => {
+    clearInterval(timerRef.current)
+    if (n > 1) timerRef.current = setInterval(() => setIdx(i => (i + 1) % n), 4500)
+  }
+  useEffect(() => { resume(); return () => clearInterval(timerRef.current) }, [n])
+
+  useEffect(() => { setIdx(0) }, [banners])
+
+  if (!n) return null
+
+  const go = d => setIdx(i => (i + d + n) % n)
+  const onTouchStart = e => { dragRef.current = { x: e.touches[0].clientX, active: true }; clearInterval(timerRef.current) }
+  const onTouchEnd = e => {
+    if (!dragRef.current.active) return
+    const dx = e.changedTouches[0].clientX - dragRef.current.x
+    if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1)
+    dragRef.current.active = false
+    resume()
+  }
+
+  return html`
+    <section className="banner-section">
+      <div className="banner-carousel" onMouseEnter=${()=>clearInterval(timerRef.current)} onMouseLeave=${resume}
+           onTouchStart=${onTouchStart} onTouchEnd=${onTouchEnd}>
+        <div className="banner-track" style=${{transform:`translateX(-${idx*100}%)`}}>
+          ${banners.map((src,i) => html`
+            <div className="banner-slide" key=${i}>
+              <img src=${src} alt="" loading=${i===0?'eager':'lazy'}/>
+            </div>`)}
+        </div>
+        ${n > 1 && html`<${React.Fragment}>
+          <button className="banner-arrow prev" onClick=${()=>go(-1)} aria-label="Oldingi banner">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button className="banner-arrow next" onClick=${()=>go(1)} aria-label="Keyingi banner">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div className="banner-dots">
+            ${banners.map((_,i) => html`<button key=${i} className=${'banner-dot'+(i===idx?' active':'')} onClick=${()=>setIdx(i)} aria-label=${'Banner '+(i+1)}/>`)}
+          </div>
+        </${React.Fragment}>`}
+      </div>
+    </section>`
+}
+
 function App() {
   const [info,      setInfo]     = useState(null)
   const [products,  setProds]    = useState([])
@@ -1622,6 +1723,15 @@ function App() {
   const navCartRef = useRef(null)
 
   useEffect(() => { api('/storefront/info/').then(setInfo).catch(()=>{}) }, [])
+
+  // dukonline.uz "Online do'kon → Bannerlar" bo'limidan yuklangan rasmlar bo'lsa
+  // o'shalar ko'rsatiladi, hali hech narsa yuklanmagan bo'lsa — namuna rasmlar.
+  const banners = useMemo(() => {
+    const fromApi = (info?.banners || [])
+      .map(b => typeof b === 'string' ? b : (b.image_url || b.image || b.url || b.photo || b.file))
+      .filter(Boolean).map(media)
+    return fromApi.length ? fromApi : DEMO_BANNERS
+  }, [info])
 
   useEffect(() => {
     setLoad(true)
@@ -1792,6 +1902,9 @@ function App() {
             </button>`)}
         </div>
       </nav>`}
+
+    <!-- ── Banner carousel ──────────────────────────────────── -->
+    <${BannerCarousel} banners=${banners}/>
 
     <!-- ── Page body ───────────────────────────────────────── -->
     <main className="page-body">
