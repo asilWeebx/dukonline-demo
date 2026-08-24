@@ -621,6 +621,26 @@
 
     /* extra bottom padding for nav */
     .page-body { padding-bottom: 100px !important; }
+
+    /* ── Kategoriya chip rasmi ── */
+    .cat-chip { display: inline-flex; align-items: center; gap: 6px; }
+    .cat-chip-thumb { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; margin-left: -6px; flex-shrink: 0; }
+
+    /* ── Banner karusel ── */
+    .banner-wrap { position: relative; margin: 0 0 28px; overflow: hidden; border-radius: 16px; }
+    .banner-track { display: flex; transition: transform .5s cubic-bezier(.4,0,.2,1); }
+    .banner-slide { position: relative; min-width: 100%; aspect-ratio: 24 / 8; background: #f2f2f2; }
+    .banner-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .banner-title { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 26px;
+      background: linear-gradient(transparent, rgba(0,0,0,.55)); color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -.3px; }
+    .banner-dots { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+    .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.55); cursor: pointer; transition: all .25s; }
+    .banner-dot.active { background: #fff; width: 22px; border-radius: 4px; }
+    @media (max-width: 640px) {
+      .banner-wrap { margin-bottom: 20px; border-radius: 12px; }
+      .banner-slide { aspect-ratio: 16 / 9; }
+      .banner-title { font-size: 15px; padding: 14px 16px; }
+    }
     @media (max-width: 480px) { .bottom-nav { width: 70%; } }
 
     /* ── Product Detail Overlay ──────────────── */
@@ -1592,11 +1612,37 @@ function CustomerPortal({ open, onClose, customer, onLogout }) {
 }
 
 // ── App ─────────────────────────────────────────────────────────────────────
+// ── Banner karusel (avtomatik aylanadi) ─────────────────────────────────────
+function BannerCarousel({ banners }) {
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    if (!banners || banners.length <= 1) return
+    const t = setInterval(() => setIdx(i => (i + 1) % banners.length), 4000)
+    return () => clearInterval(t)
+  }, [banners])
+  if (!banners || !banners.length) return null
+  const n = banners.length
+  return html`
+    <div className="banner-wrap">
+      <div className="banner-track" style=${{transform:`translateX(-${idx*100}%)`}}>
+        ${banners.map(b => html`
+          <div key=${b.id} className="banner-slide">
+            <img src=${media(b.image)} alt=${b.title||''} loading="lazy"/>
+            ${b.title && html`<div className="banner-title">${b.title}</div>`}
+          </div>`)}
+      </div>
+      ${n > 1 && html`<div className="banner-dots">
+        ${banners.map((_,i) => html`<span key=${i} className=${'banner-dot'+(i===idx?' active':'')} onClick=${()=>setIdx(i)}></span>`)}
+      </div>`}
+    </div>`
+}
+
 function App() {
   const [info,      setInfo]     = useState(null)
   const [products,  setProds]    = useState([])
   const [cats,      setCats]     = useState([])
   const [showImages,setShowImg]  = useState(true)
+  const [catImgs,   setCatImgs]  = useState({})
   const [loading,   setLoad]     = useState(true)
   const [error,     setErr]      = useState('')
 
@@ -1630,6 +1676,7 @@ function App() {
       const list = r.results || []
       setProds(list)
       setShowImg(r.show_images !== false)
+      setCatImgs(Object.fromEntries((r.category_images||[]).map(c => [c.id, c.image])))
       // Kategoriya daraxti: leaf (o'z parent'i bilan) + parent kategoriyalar
       const map = new Map()
       list.forEach(p => {
@@ -1774,6 +1821,7 @@ function App() {
           </button>
           ${topCats.map(c => html`
             <button key=${c.id} className=${'cat-chip'+(selTop===c.id?' active':'')} onClick=${()=>{setSelTop(c.id);setSelSub(null)}}>
+              ${catImgs[c.id] && html`<img className="cat-chip-thumb" src=${media(catImgs[c.id])} alt=""/>`}
               ${c.name}
             </button>`)}
         </div>
@@ -1795,6 +1843,7 @@ function App() {
 
     <!-- ── Page body ───────────────────────────────────────── -->
     <main className="page-body">
+      ${selTop===null && selSub===null && html`<${BannerCarousel} banners=${info?.banners}/>`}
       <h1 className="page-title">
         ${catName || 'Katalog'}
         ${!loading && html`<span>${filtered.length} ta mahsulot</span>`}
