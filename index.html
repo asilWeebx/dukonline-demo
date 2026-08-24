@@ -1672,11 +1672,14 @@ function BannerCarousel({ banners }) {
   return html`
     <div className="banner-wrap">
       <div className="banner-track" style=${{transform:`translateX(-${idx*100}%)`}}>
-        ${banners.map(b => html`
-          <div key=${b.id} className="banner-slide">
-            <img src=${media(b.image)} alt=${b.title||''} loading="lazy"/>
-            ${b.title && html`<div className="banner-title">${b.title}</div>`}
-          </div>`)}
+        ${banners.map((b,i) => {
+          const src = typeof b === 'string' ? b : (b.image || b.url || b.photo)
+          const title = typeof b === 'string' ? '' : (b.title || '')
+          return html`<div key=${i} className="banner-slide">
+            <img src=${media(src)} alt=${title} loading="lazy"/>
+            ${title && html`<div className="banner-title">${title}</div>`}
+          </div>`
+        })}
       </div>
       ${n > 1 && html`<div className="banner-dots">
         ${banners.map((_,i) => html`<span key=${i} className=${'banner-dot'+(i===idx?' active':'')} onClick=${()=>setIdx(i)}></span>`)}
