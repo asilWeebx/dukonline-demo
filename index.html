@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
   <title>Do'kon</title>
   <link rel="icon" href="data:,">
+  <!-- Xarita (yetkazish joyini belgilash) — OpenStreetMap, kalitsiz -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>document.write('<script src="./config.js?_='+Date.now()+'"><\/script>')</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -870,6 +873,31 @@ const HDR = { 'Content-Type': 'application/json', 'X-Storefront-Key': STOREFRONT
 const ACCENT = '#E8A020', AD = '#C8880A'
 
 const som   = n => { const v = Math.round(+n||0); return v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' so\'m' }
+// Narxni O'Z valyutasida: USD → "$50", aks holda so'm.
+const money = (n, cur) => {
+  if (!cur || cur === '' || cur === 'UZS') return som(n)
+  const v = Math.round((+n||0)*100)/100
+  let i, d
+  if (Number.isInteger(v)) { i = v.toString(); d = '' } else { [i, d] = v.toFixed(2).split('.') }
+  i = i.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  return (cur === 'USD' ? '$' : cur + ' ') + i + (d ? '.' + d : '')
+}
+// Savat jami — valyuta bo'yicha guruhlab ("$52  +  300 000 so'm")
+const groupTotal = (items) => {
+  const t = {}
+  ;(items || []).forEach(it => { const c = it.currency || ''; t[c] = (t[c] || 0) + (it.cur_price ?? it.price) * it.qty })
+  const e = Object.entries(t)
+  return e.length ? e.map(([c, v]) => money(v, c)).join('  +  ') : som(0)
+}
+// Koordinatani manzil matniga (OpenStreetMap Nominatim — bepul, kalitsiz).
+const reverseGeocode = async (lat, lng) => {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=uz,ru`, { headers:{ 'Accept':'application/json' } })
+    if (!r.ok) return null
+    const d = await r.json()
+    return d.display_name || null
+  } catch { return null }
+}
 // Og'irlik/o'lchov birlikmi (kg, gramm) — kasr miqdor bilan sotiladi
 const isWeightUnit = name => /kilogram|kilogramm|gramm|\bkg\b|\bg\b/i.test((name||'').trim())
 // Miqdorni ko'rsatish: butun bo'lsa "2", kasr bo'lsa "0.5"
@@ -929,6 +957,10 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
 
   const displayPrice    = hasVariants ? (selVariant?.price ?? 0) : (unit?.price ?? 0)
   const displayOrigPrice = hasVariants ? (selVariant?.original_price ?? null) : (unit?.original_price ?? null)
+  // Valyuta: USD tovar $ da, aks holda so'm
+  const dispCur = hasVariants ? (selVariant?.currency ?? '') : (unit?.currency ?? '')
+  const dispVal = hasVariants ? (selVariant?.cur_price ?? displayPrice) : (unit?.cur_price ?? displayPrice)
+  const dispOrigVal = hasVariants ? (selVariant?.cur_original_price ?? null) : (unit?.cur_original_price ?? null)
   const mult   = unit?.multiplier || 1
   const isWeight = !hasVariants && isWeightUnit(unit?.unit_name)  // kg tovar — kasr miqdor
   const maxQty = hasVariants
@@ -978,8 +1010,8 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
           ${p.category_name && html`<div className="detail-cat">${p.category_name}</div>`}
           <h1 className="detail-name">${p.name}</h1>
           <div className="detail-price">
-            ${displayOrigPrice && html`<span className="price-orig-strike">${som(displayOrigPrice)}</span>`}
-            ${som(displayPrice)}
+            ${dispOrigVal && html`<span className="price-orig-strike">${money(dispOrigVal, dispCur)}</span>`}
+            ${money(dispVal, dispCur)}
             ${p.discount_percent > 0 && html`<span className="disc-badge">−${Math.round(p.discount_percent)}%</span>`}
           </div>
 
@@ -992,8 +1024,8 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
                   className=${'detail-unit-chip variant-chip'+(variantId===v.id?' active':'')+(v.in_stock?'':' unavailable')}
                   onClick=${()=>{ if(v.in_stock){setVariantId(v.id);setQty(1)} }}>
                   <span className="vc-name">${v.name}</span>
-                  ${v.original_price != null && html`<span className="vc-orig">${som(v.original_price)}</span>`}
-                  <span className="vc-price">${som(v.price)}</span>
+                  ${(v.cur_original_price ?? v.original_price) != null && html`<span className="vc-orig">${money(v.cur_original_price ?? v.original_price, v.currency)}</span>`}
+                  <span className="vc-price">${money(v.cur_price ?? v.price, v.currency)}</span>
                   ${v.stock!=null ? html`<span className="vc-stock">${Math.floor(v.stock)} ta</span>` : null}
                   ${!v.in_stock ? html`<span className="vc-out">Tugadi</span>` : null}
                 </button>`)}
@@ -1177,6 +1209,10 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
   const displayOrigPrice = hasVariants
     ? (p.variants[0]?.original_price ?? null)
     : (unit?.original_price ?? null)
+  // Valyuta: USD tovar $ da, aks holda so'm
+  const dispCur = hasVariants ? (p.variants[0]?.currency ?? '') : (unit?.currency ?? '')
+  const dispVal = hasVariants ? (p.variants[0]?.cur_price ?? displayPrice) : (unit?.cur_price ?? displayPrice)
+  const dispOrigVal = hasVariants ? (p.variants[0]?.cur_original_price ?? null) : (unit?.cur_original_price ?? null)
 
   const handleAdd = (e) => {
     e.stopPropagation()
@@ -1209,8 +1245,8 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
 
       <!-- Price -->
       <div className="product-price">
-        ${displayOrigPrice != null && html`<span className="price-orig-strike">${hasVariants ? 'dan '+som(displayOrigPrice) : som(displayOrigPrice)}</span>`}
-        ${hasVariants ? 'dan '+som(displayPrice) : som(displayPrice)}
+        ${dispOrigVal != null && html`<span className="price-orig-strike">${hasVariants ? 'dan '+money(dispOrigVal, dispCur) : money(dispOrigVal, dispCur)}</span>`}
+        ${hasVariants ? 'dan '+money(dispVal, dispCur) : money(dispVal, dispCur)}
         ${p.discount_percent > 0 && html`<span className="disc-badge">−${Math.round(p.discount_percent)}%</span>`}
       </div>
 
@@ -1299,8 +1335,8 @@ function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) 
                   </div>
                   <div className="cart-info-new">
                     <div className="cart-name-new clamp2">${it.name}${it.variant_name ? ' · '+it.variant_name : ''}</div>
-                    <div className="cart-price-new">${som(it.price * it.qty)}</div>
-                    <div className="cart-unit-new">${som(it.price)} × ${fmtQty(it.qty)} ${it.unit_name}</div>
+                    <div className="cart-price-new">${it.currency==='USD' && it.cur_price!=null ? money(it.cur_price*it.qty, it.currency) : som(it.price*it.qty)}</div>
+                    <div className="cart-unit-new">${it.currency==='USD' && it.cur_price!=null ? money(it.cur_price, it.currency) : som(it.price)} × ${fmtQty(it.qty)} ${it.unit_name}</div>
                   </div>
                   ${it.weight
                     ? html`<div className="cart-qty-ctrl">
@@ -1327,7 +1363,7 @@ function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) 
         <div className="cart-footer-new">
           <div className="cart-total-card">
             <span className="cart-total-lbl">Jami summa</span>
-            <span className="cart-total-val">${som(total)}</span>
+            <span className="cart-total-val">${groupTotal(items)}</span>
           </div>
           <button className="cart-checkout-btn" disabled=${items.length===0}
             onClick=${()=>{onClose();onCheckout()}}>
@@ -1339,16 +1375,99 @@ function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) 
     </div>`
 }
 
+// ── Xarita picker (Leaflet + OSM) ────────────────────────────────────────
+function MapPicker({ open, initial, onPick, onClose }) {
+  const boxRef = useRef(null)
+  const mapRef = useRef(null)
+  const ctrRef = useRef(initial && initial.lat != null ? initial : { lat:41.311081, lng:69.240562 })
+  const [addr, setAddr] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!open || !window.L || !boxRef.current) return
+    const L = window.L
+    const c = ctrRef.current
+    const map = L.map(boxRef.current, { attributionControl:false }).setView([c.lat, c.lng], 16)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map)
+    mapRef.current = map
+    let t
+    const resolve = async () => {
+      const p = map.getCenter()
+      ctrRef.current = { lat:p.lat, lng:p.lng }
+      setLoading(true)
+      const a = await reverseGeocode(p.lat, p.lng)
+      setAddr(a); setLoading(false)
+    }
+    map.on('moveend', () => { clearTimeout(t); t = setTimeout(resolve, 350) })
+    setTimeout(() => { map.invalidateSize(); resolve() }, 120)
+    return () => { clearTimeout(t); map.remove(); mapRef.current = null }
+  }, [open])
+
+  if (!open) return null
+  const locate = () => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      p => mapRef.current && mapRef.current.setView([p.coords.latitude, p.coords.longitude], 17),
+      () => {}, { enableHighAccuracy:true, timeout:15000 })
+  }
+  return html`
+    <div style=${{position:'fixed',inset:0,zIndex:1000,background:'#000'}}>
+      <div ref=${boxRef} style=${{position:'absolute',inset:0}}></div>
+      <div style=${{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-100%)',pointerEvents:'none',fontSize:42,zIndex:500}}>📍</div>
+      <button onClick=${onClose} style=${{position:'absolute',top:16,left:16,zIndex:600,width:44,height:44,borderRadius:22,border:'none',background:'#fff',fontSize:18,cursor:'pointer',boxShadow:'0 2px 10px rgba(0,0,0,.3)'}}>✕</button>
+      <button onClick=${locate} style=${{position:'absolute',right:16,bottom:190,zIndex:600,width:46,height:46,borderRadius:23,border:'none',background:'#fff',fontSize:20,cursor:'pointer',boxShadow:'0 2px 10px rgba(0,0,0,.3)'}}>🎯</button>
+      <div style=${{position:'absolute',left:0,right:0,bottom:0,background:'#fff',borderRadius:'18px 18px 0 0',padding:'18px 20px calc(18px + env(safe-area-inset-bottom))',zIndex:600}}>
+        <div style=${{fontSize:11,fontWeight:700,color:'#888',letterSpacing:.6,marginBottom:8}}>TANLANGAN JOY</div>
+        <div style=${{background:'#f4f4f4',borderRadius:12,padding:14,fontSize:14,fontWeight:700,color:'#222',marginBottom:14,lineHeight:1.4}}>${loading ? 'Aniqlanmoqda...' : (addr || 'Manzil aniqlanmadi (koordinata saqlanadi)')}</div>
+        <button onClick=${()=>onPick(ctrRef.current.lat, ctrRef.current.lng, addr)} style=${{width:'100%',height:52,border:'none',borderRadius:14,background:ACCENT,color:'#fff',fontSize:16,fontWeight:800,cursor:'pointer'}}>Shu yerni tanlash</button>
+      </div>
+    </div>`
+}
+
 // ── Checkout ─────────────────────────────────────────────────────────────
-function Checkout({ open, onClose, total, onSubmit, submitting, customer }) {
+function Checkout({ open, onClose, total, totalStr, onSubmit, submitting, customer }) {
   const [name,  setName]  = useState(customer?.name||'')
   const [phone, setPhone] = useState(customer?.phone||'')
-  const [err,   setErr]   = useState('')
+  const [delivery, setDelivery] = useState('courier')
+  const [payment,  setPayment]  = useState('cash')
+  const [address,  setAddress]  = useState('')
+  const [landmark, setLandmark] = useState('')
+  const [lat, setLat] = useState(null)
+  const [lng, setLng] = useState(null)
+  const [locating, setLocating] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
+  const [err, setErr] = useState('')
+  const courier = delivery === 'courier'
   if (!open) return null
+
+  const locateMe = () => {
+    if (!navigator.geolocation) { setErr("Qurilma joylashuvni qo'llamaydi"); return }
+    setLocating(true); setErr('')
+    navigator.geolocation.getCurrentPosition(async p => {
+      setLat(p.coords.latitude); setLng(p.coords.longitude)
+      const a = await reverseGeocode(p.coords.latitude, p.coords.longitude)
+      if (a) setAddress(a)
+      setLocating(false)
+    }, () => { setLocating(false); setErr("Joylashuvga ruxsat berilmadi") }, { enableHighAccuracy:true, timeout:15000 })
+  }
+
   const go = () => {
     if (!name.trim() || !phone.trim()) { setErr('Ism va telefon raqami majburiy'); return }
-    onSubmit({ customer_name: name.trim(), phone: phone.trim() })
+    if (courier && !address.trim() && lat == null) { setErr('Manzil kiriting yoki xaritadan belgilang'); return }
+    onSubmit({
+      customer_name: name.trim(), phone: phone.trim(),
+      delivery_type: delivery, payment_method: payment,
+      ...(courier ? { address: address.trim(), landmark: landmark.trim() } : {}),
+      ...(courier && lat != null ? { latitude: lat, longitude: lng } : {}),
+    })
   }
+
+  const seg = (v,label) => html`<button onClick=${()=>setDelivery(v)} style=${{flex:1,height:48,borderRadius:12,border:'1.5px solid '+(delivery===v?ACCENT:'rgba(150,150,150,.35)'),background:delivery===v?ACCENT:'transparent',color:delivery===v?'#fff':'inherit',fontSize:15,fontWeight:800,cursor:'pointer'}}>${label}</button>`
+  const payCard = (v,title,sub) => html`<button onClick=${()=>setPayment(v)} style=${{display:'flex',alignItems:'center',gap:12,width:'100%',textAlign:'left',padding:14,borderRadius:12,border:(payment===v?'2px solid '+ACCENT:'1.5px solid rgba(150,150,150,.3)'),background:'transparent',color:'inherit',cursor:'pointer'}}>
+    <div style=${{flex:1}}><div style=${{fontSize:15,fontWeight:800}}>${title}</div><div style=${{fontSize:12,color:'rgba(150,150,150,.95)',marginTop:2}}>${sub}</div></div>
+    <div style=${{width:20,height:20,borderRadius:10,border:'2px solid '+(payment===v?ACCENT:'rgba(150,150,150,.5)'),background:payment===v?ACCENT:'transparent',flexShrink:0}}></div>
+  </button>`
+
   return html`
     <div className="overlay-bg fade-in">
       <div className="overlay-dim" onClick=${onClose}></div>
@@ -1358,8 +1477,37 @@ function Checkout({ open, onClose, total, onSubmit, submitting, customer }) {
           <div className="sheet-title">Buyurtmani rasmiylashtirish</div>
           <button className="close-btn" onClick=${onClose}><${IX}/></button>
         </div>
-        <div style=${{padding:'0 20px 36px',display:'flex',flexDirection:'column',gap:14,marginTop:8}}>
-          <p style=${{fontSize:13,color:'#aaa',marginBottom:4}}>Telefon raqamingizni qoldiring — do'kon siz bilan bog'lanadi.</p>
+        <div style=${{padding:'0 20px 36px',display:'flex',flexDirection:'column',gap:14,marginTop:8,flex:1,overflowY:'auto',minHeight:0}}>
+
+          <div>
+            <div className="form-label" style=${{marginBottom:8}}>YETKAZIB BERISH</div>
+            <div style=${{display:'flex',gap:10}}>${seg('courier','Kuryer')} ${seg('pickup','Olib ketaman')}</div>
+          </div>
+
+          ${courier && html`
+            <div className="form-field">
+              <label className="form-label">Manzil</label>
+              <input className="form-input" value=${address} onInput=${e=>setAddress(e.target.value)} placeholder="Ko'cha, uy, xonadon"/>
+            </div>
+            <div className="form-field">
+              <label className="form-label">Mo'ljal (ixtiyoriy)</label>
+              <input className="form-input" value=${landmark} onInput=${e=>setLandmark(e.target.value)} placeholder="Masalan: maktab yonida"/>
+            </div>
+            <div style=${{display:'flex',gap:10}}>
+              <button onClick=${locateMe} disabled=${locating} style=${{flex:1,height:46,borderRadius:12,border:'1.5px solid rgba(150,150,150,.35)',background:'transparent',color:'inherit',fontSize:14,fontWeight:700,cursor:'pointer'}}>${locating?'Aniqlanmoqda...':'📍 Meni topish'}</button>
+              <button onClick=${()=>setMapOpen(true)} style=${{flex:1,height:46,borderRadius:12,border:'1.5px solid '+(lat!=null?ACCENT:'rgba(150,150,150,.35)'),background:lat!=null?ACCENT:'transparent',color:lat!=null?'#fff':'inherit',fontSize:14,fontWeight:700,cursor:'pointer'}}>🗺️ Xaritadan belgilash</button>
+            </div>
+            ${lat!=null && html`<div style=${{fontSize:12,color:'#16a34a',fontWeight:700,marginTop:-4}}>✓ Joylashuv belgilandi</div>`}
+          `}
+
+          <div>
+            <div className="form-label" style=${{marginBottom:8}}>TO'LOV USULI</div>
+            <div style=${{display:'flex',flexDirection:'column',gap:10}}>
+              ${payCard('cash','Naqd pul',"Kuryerga qo'lma-qo'l topshirasiz")}
+              ${payCard('card','Karta orqali','Operator karta raqamini yuboradi')}
+            </div>
+          </div>
+
           <div className="form-field">
             <label className="form-label">Ismingiz</label>
             <input className="form-input" value=${name} onInput=${e=>setName(e.target.value)} placeholder="Ism Familiya"/>
@@ -1368,16 +1516,22 @@ function Checkout({ open, onClose, total, onSubmit, submitting, customer }) {
             <label className="form-label">Telefon raqam</label>
             <input className="form-input" type="tel" value=${phone} onInput=${e=>setPhone(e.target.value)} placeholder="+998 90 000 00 00"/>
           </div>
+
           ${err && html`<div className="err-box">${err}</div>`}
-          <div className="total-row">
+        </div>
+        <div style=${{padding:'12px 20px calc(16px + env(safe-area-inset-bottom))',borderTop:'1px solid rgba(150,150,150,.2)',flexShrink:0,background:'inherit'}}>
+          <div className="total-row" style=${{marginBottom:12}}>
             <span className="total-label">Jami</span>
-            <span className="total-val">${som(total)}</span>
+            <span className="total-val">${totalStr || som(total)}</span>
           </div>
           <button className="primary-btn" onClick=${go} disabled=${submitting}>
-            ${submitting ? 'Yuborilmoqda...' : 'Tasdiqlash va yuborish'}
+            ${submitting ? 'Yuborilmoqda...' : 'Buyurtmani tasdiqlash'}
           </button>
         </div>
       </div>
+      <${MapPicker} open=${mapOpen} initial=${lat!=null?{lat,lng}:null}
+        onPick=${(la,ln,a)=>{ setLat(la); setLng(ln); if(a) setAddress(a); setMapOpen(false) }}
+        onClose=${()=>setMapOpen(false)}/>
     </div>`
 }
 
@@ -1730,7 +1884,7 @@ function App() {
     setCart(c => {
       const ex = c.find(x=>x.key===key)
       if (ex) { if(ex.qty>=max) return c; return c.map(x=>x.key===key?{...x,qty:Math.min(x.qty+qty,max)}:x) }
-      return [...c, {key,product_id:p.id,unit_id:unit?.unit_id,variant_id:null,variant_name:'',unit_name:unit?.unit_name||'dona',weight,name:p.name,price:unit?.price,qty:Math.min(qty,max),maxQty:max,image:p.image}]
+      return [...c, {key,product_id:p.id,unit_id:unit?.unit_id,variant_id:null,variant_name:'',unit_name:unit?.unit_name||'dona',weight,name:p.name,price:unit?.price,currency:unit?.currency||'',cur_price:unit?.cur_price,qty:Math.min(qty,max),maxQty:max,image:p.image}]
     })
     _orbBounce(fromEl)
   }
@@ -1742,7 +1896,7 @@ function App() {
     setCart(c => {
       const ex = c.find(x=>x.key===key)
       if (ex) return c.map(x=>x.key===key?{...x,qty:Math.min(x.qty+qty,max)}:x)
-      return [...c, {key,product_id:p.id,unit_id:null,variant_id:variant.id,variant_name:variant.name,unit_name:'dona',name:p.name,price:variant.price,qty,maxQty:max===Infinity?9999:max,image:p.image}]
+      return [...c, {key,product_id:p.id,unit_id:null,variant_id:variant.id,variant_name:variant.name,unit_name:'dona',name:p.name,price:variant.price,currency:variant.currency||'',cur_price:variant.cur_price,qty,maxQty:max===Infinity?9999:max,image:p.image}]
     })
     _orbBounce(fromEl)
   }
@@ -1877,7 +2031,7 @@ function App() {
 
     <${Checkout}
       open=${chkOpen} onClose=${()=>setChkOpen(false)}
-      total=${total} onSubmit=${submitOrder} submitting=${subbing} customer=${customer}/>
+      total=${total} totalStr=${groupTotal(cart)} onSubmit=${submitOrder} submitting=${subbing} customer=${customer}/>
 
     <${Login} open=${loginOpen} onClose=${()=>setLoginOpen(false)} onLogin=${doLogin}/>
 
