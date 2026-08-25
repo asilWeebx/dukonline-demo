@@ -627,19 +627,33 @@
     .cat-chip-thumb { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; margin-left: -6px; flex-shrink: 0; }
 
     /* ── Banner karusel ── */
-    .banner-wrap { position: relative; margin: 0 0 28px; overflow: hidden; border-radius: 16px; }
+    /* Mahsulotlar bloki bilan bir xil kenglikda (page-body bilan mos) */
+    .banner-wrap { max-width: 1400px; margin: 24px auto 28px; padding: 0 24px; }
+    .banner-viewport { position: relative; overflow: hidden; border-radius: 16px; }
     .banner-track { display: flex; transition: transform .5s cubic-bezier(.4,0,.2,1); }
-    .banner-slide { position: relative; min-width: 100%; aspect-ratio: 24 / 8; background: #f2f2f2; }
-    .banner-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .banner-slide { position: relative; min-width: 100%; aspect-ratio: 3 / 1; background: #f2f2f2; }
+    .banner-slide img { width: 100%; height: 100%; object-fit: fill; display: block; }
     .banner-title { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 26px;
       background: linear-gradient(transparent, rgba(0,0,0,.55)); color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -.3px; }
-    .banner-dots { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
-    .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.55); cursor: pointer; transition: all .25s; }
+    .banner-dots { position: absolute; bottom: 14px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; z-index: 2; }
+    .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.55); cursor: pointer; transition: all .25s; border: none; padding: 0; }
     .banner-dot.active { background: #fff; width: 22px; border-radius: 4px; }
+    .banner-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: rgba(20,20,20,.4); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background .15s; z-index: 3;
+    }
+    .banner-arrow:hover { background: rgba(20,20,20,.62); }
+    .banner-arrow.prev { left: 14px; }
+    .banner-arrow.next { right: 14px; }
     @media (max-width: 640px) {
-      .banner-wrap { margin-bottom: 20px; border-radius: 12px; }
+      .banner-wrap { padding: 0 16px; margin: 16px auto 20px; }
+      .banner-viewport { border-radius: 12px; }
       .banner-slide { aspect-ratio: 16 / 9; }
       .banner-title { font-size: 15px; padding: 14px 16px; }
+      .banner-arrow { width: 32px; height: 32px; }
     }
     @media (max-width: 480px) { .bottom-nav { width: 70%; } }
 
@@ -856,46 +870,6 @@
     .product-item { cursor: pointer; }
     .product-img-wrap { cursor: zoom-in; }
 
-    /* ── Banner Carousel ──────────────────────── */
-    .banner-section { max-width: 1400px; margin: 24px auto 0; padding: 0 24px; }
-    .banner-carousel {
-      position: relative; border-radius: 18px; overflow: hidden;
-      aspect-ratio: 2 / 1; background: #f5f5f5;
-      touch-action: pan-y;
-    }
-    .banner-track {
-      display: flex; height: 100%;
-      transition: transform .5s cubic-bezier(.4,0,.2,1);
-    }
-    .banner-slide { flex: 0 0 100%; height: 100%; }
-    .banner-slide img { width: 100%; height: 100%; object-fit: contain; display: block; }
-    .banner-arrow {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      width: 38px; height: 38px; border-radius: 50%; border: none;
-      background: rgba(255,255,255,.9); color: #333;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.18);
-      opacity: 0; transition: opacity .2s, background .15s;
-    }
-    .banner-arrow:hover { background: #fff; }
-    .banner-carousel:hover .banner-arrow { opacity: 1; }
-    .banner-arrow.prev { left: 16px; }
-    .banner-arrow.next { right: 16px; }
-    .banner-dots {
-      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 6px; z-index: 2;
-    }
-    .banner-dot {
-      width: 7px; height: 7px; border-radius: 50%; padding: 0; border: none;
-      background: rgba(255,255,255,.55); cursor: pointer; transition: all .2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,.15);
-    }
-    .banner-dot.active { width: 22px; border-radius: 4px; background: #fff; }
-    @media (max-width: 640px) {
-      .banner-section  { padding: 0 16px; margin-top: 16px; }
-      .banner-carousel { aspect-ratio: 16 / 10; border-radius: 14px; }
-      .banner-arrow    { display: none; }
-    }
   </style>
 </head>
 <body>
@@ -1662,28 +1636,44 @@ function CustomerPortal({ open, onClose, customer, onLogout }) {
 // ── Banner karusel (avtomatik aylanadi) ─────────────────────────────────────
 function BannerCarousel({ banners }) {
   const [idx, setIdx] = useState(0)
-  useEffect(() => {
-    if (!banners || banners.length <= 1) return
-    const t = setInterval(() => setIdx(i => (i + 1) % banners.length), 4000)
-    return () => clearInterval(t)
-  }, [banners])
-  if (!banners || !banners.length) return null
-  const n = banners.length
+  const timerRef = useRef(null)
+  const n = banners ? banners.length : 0
+
+  const resume = () => {
+    clearInterval(timerRef.current)
+    if (n > 1) timerRef.current = setInterval(() => setIdx(i => (i + 1) % n), 4000)
+  }
+  useEffect(() => { resume(); return () => clearInterval(timerRef.current) }, [n])
+  useEffect(() => { setIdx(0) }, [banners])
+
+  if (!n) return null
+  const go = d => setIdx(i => (i + d + n) % n)
+
   return html`
     <div className="banner-wrap">
-      <div className="banner-track" style=${{transform:`translateX(-${idx*100}%)`}}>
-        ${banners.map((b,i) => {
-          const src = typeof b === 'string' ? b : (b.image || b.url || b.photo)
-          const title = typeof b === 'string' ? '' : (b.title || '')
-          return html`<div key=${i} className="banner-slide">
-            <img src=${media(src)} alt=${title} loading="lazy"/>
-            ${title && html`<div className="banner-title">${title}</div>`}
-          </div>`
-        })}
+      <div className="banner-viewport" onMouseEnter=${()=>clearInterval(timerRef.current)} onMouseLeave=${resume}>
+        <div className="banner-track" style=${{transform:`translateX(-${idx*100}%)`}}>
+          ${banners.map((b,i) => {
+            const src = typeof b === 'string' ? b : (b.image || b.url || b.photo)
+            const title = typeof b === 'string' ? '' : (b.title || '')
+            return html`<div key=${i} className="banner-slide">
+              <img src=${media(src)} alt=${title} loading=${i===0?'eager':'lazy'}/>
+              ${title && html`<div className="banner-title">${title}</div>`}
+            </div>`
+          })}
+        </div>
+        ${n > 1 && html`<${React.Fragment}>
+          <button className="banner-arrow prev" onClick=${()=>go(-1)} aria-label="Oldingi banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button className="banner-arrow next" onClick=${()=>go(1)} aria-label="Keyingi banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div className="banner-dots">
+            ${banners.map((_,i) => html`<button key=${i} className=${'banner-dot'+(i===idx?' active':'')} onClick=${()=>setIdx(i)} aria-label=${'Banner '+(i+1)}></button>`)}
+          </div>
+        </${React.Fragment}>`}
       </div>
-      ${n > 1 && html`<div className="banner-dots">
-        ${banners.map((_,i) => html`<span key=${i} className=${'banner-dot'+(i===idx?' active':'')} onClick=${()=>setIdx(i)}></span>`)}
-      </div>`}
     </div>`
 }
 
