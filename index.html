@@ -95,32 +95,75 @@
     }
 
     /* ── Category Bar ────────────────────── */
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes underlineExpand {
+      from { width: 0; left: 50%; }
+      to { width: 100%; left: 0; }
+    }
+    @keyframes chipScale {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
     .cat-bar {
-      background: #fff; border-bottom: 1px solid #f0f0f0;
+      background: linear-gradient(to bottom, #fff 0%, #fafafa 100%);
+      border-bottom: 2px solid #e8e8e8;
       position: sticky; top: 64px; z-index: 99;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      animation: slideDown 0.4s ease-out;
     }
     .cat-bar-inner {
       max-width: 1400px; margin: 0 auto; padding: 0 24px;
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 12px;
       overflow-x: auto; scrollbar-width: none;
-      height: 50px;
+      height: 64px;
     }
     .cat-chip {
-      flex-shrink: 0; height: 32px; padding: 0 16px;
-      border-radius: 999px; border: 1.5px solid #e8e8e8;
-      background: #fff; font-size: 13px; font-weight: 500; color: #555;
-      white-space: nowrap; transition: all .15s;
+      flex-shrink: 0; height: 40px; padding: 0 20px;
+      border-radius: 8px; border: none;
+      background: #f5f5f5; font-size: 14px; font-weight: 500; color: #666;
+      white-space: nowrap; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative; cursor: pointer; display: inline-flex; align-items: center;
+      overflow: hidden;
     }
-    .cat-chip:hover { border-color: #ccc; color: #111; }
+    .cat-chip::after {
+      content: '';
+      position: absolute; bottom: 0; left: 50%;
+      width: 0; height: 3px;
+      background: linear-gradient(90deg, #7c3aed, #2563eb);
+      border-radius: 2px;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .cat-chip:hover {
+      background: #efefef; color: #111;
+      transform: translateY(-2px);
+    }
+    .cat-chip:hover::after {
+      width: 100%; left: 0;
+    }
     .cat-chip.active {
-      background: #111; border-color: #111; color: #fff; font-weight: 600;
+      background: linear-gradient(135deg, #111 0%, #1f1f1f 100%);
+      border-color: #111; color: #fff; font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      animation: chipScale 0.3s ease-out;
     }
+    .cat-chip.active::after {
+      width: 100%; left: 0;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+    }
+
     /* sub-kategoriya qatori (top'ning ostida) */
-    .cat-bar-sub { top: 114px; z-index: 98; }
-    .cat-bar-sub .cat-bar-inner { height: 46px; }
-    .cat-chip-sub { height: 30px; font-size: 12.5px; }
+    .cat-bar-sub { top: 128px; z-index: 98; }
+    .cat-bar-sub .cat-bar-inner { height: 56px; }
+    .cat-chip-sub { height: 36px; font-size: 13px; padding: 0 18px; }
     .cat-chip-sub.active {
-      background: var(--accent); border-color: var(--accent); color: #fff;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent) 100%);
+      border-color: var(--accent); color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     /* ── Page body ───────────────────────── */
@@ -421,8 +464,10 @@
       .page-body    { padding: 24px 16px 80px; }
       .page-title   { font-size: 24px; margin-bottom: 20px; }
       .cat-bar      { top: 56px; }
-      .cat-bar-sub  { top: 106px; }
-      .cat-bar-inner{ padding: 0 16px; }
+      .cat-bar-sub  { top: 112px; }
+      .cat-bar-inner{ padding: 0 16px; height: 60px; gap: 10px; }
+      .cat-chip { height: 36px; padding: 0 16px; font-size: 13px; }
+      .cat-chip-sub { height: 32px; padding: 0 14px; font-size: 12px; }
       .product-name { font-size: 13px; }
       .product-price{ font-size: 15px; }
     }
@@ -623,15 +668,23 @@
     .page-body { padding-bottom: 100px !important; }
 
     /* ── Kategoriya chip rasmi ── */
-    .cat-chip { display: inline-flex; align-items: center; gap: 6px; }
-    .cat-chip-thumb { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; margin-left: -6px; flex-shrink: 0; }
+    .cat-chip { display: inline-flex; align-items: center; gap: 8px; }
+    .cat-chip-thumb {
+      width: 28px; height: 28px; border-radius: 6px; object-fit: cover;
+      margin-left: -4px; flex-shrink: 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    .cat-chip:hover .cat-chip-thumb {
+      transform: scale(1.1);
+    }
 
     /* ── Banner karusel ── */
     /* Mahsulotlar bloki bilan bir xil kenglikda (page-body bilan mos) */
     .banner-wrap { max-width: 1400px; margin: 24px auto 28px; padding: 0 24px; }
     .banner-viewport { position: relative; overflow: hidden; border-radius: 16px; }
     .banner-track { display: flex; transition: transform .5s cubic-bezier(.4,0,.2,1); }
-    .banner-slide { position: relative; min-width: 100%; aspect-ratio: 3 / 1; background: #f2f2f2; }
+    .banner-slide { position: relative; min-width: 100%; aspect-ratio: 2 / 1; background: #f2f2f2; }
     .banner-slide img { width: 100%; height: 100%; object-fit: fill; display: block; }
     .banner-title { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 26px;
       background: linear-gradient(transparent, rgba(0,0,0,.55)); color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -.3px; }
