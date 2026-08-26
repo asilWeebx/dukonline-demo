@@ -99,61 +99,46 @@
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes underlineExpand {
-      from { width: 0; left: 50%; }
-      to { width: 100%; left: 0; }
-    }
-    @keyframes chipScale {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
 
     .cat-bar {
-      background: linear-gradient(to bottom, #fff 0%, #fafafa 100%);
-      border-bottom: 2px solid #e8e8e8;
       position: sticky; top: 64px; z-index: 99;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       animation: slideDown 0.4s ease-out;
+      transition: background-color 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+    .cat-bar-stuck {
+      background: rgba(255,255,255,0.97);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      border-bottom: 1px solid #eee;
     }
     .cat-bar-inner {
-      max-width: 1400px; margin: 0 auto; padding: 0 24px;
-      display: flex; align-items: center; gap: 12px;
+      max-width: 1400px; margin: 0 auto; padding: 12px 24px;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
       overflow-x: auto; scrollbar-width: none;
-      height: 64px;
+      height: auto;
+      transition: padding 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    .cat-bar-stuck .cat-bar-inner { padding: 6px 24px; }
     .cat-chip {
-      flex-shrink: 0; height: 40px; padding: 0 20px;
-      border-radius: 8px; border: none;
-      background: #f5f5f5; font-size: 14px; font-weight: 500; color: #666;
-      white-space: nowrap; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      position: relative; cursor: pointer; display: inline-flex; align-items: center;
-      overflow: hidden;
+      flex-shrink: 0; height: 70px; padding: 18px 26px 18px 10px;
+      border-radius: 12px; border: 1px solid #e8e8e8;
+      background: #fafafa; font-size: 16px; font-weight: 500; color: #333;
+      transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease,
+                  height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                  font-size 0.35s cubic-bezier(0.4, 0, 0.2, 1), gap 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative; cursor: pointer; display: inline-flex;
+      align-items: center; gap: 14px; overflow: visible;
     }
-    .cat-chip::after {
-      content: '';
-      position: absolute; bottom: 0; left: 50%;
-      width: 0; height: 3px;
-      background: linear-gradient(90deg, #7c3aed, #2563eb);
-      border-radius: 2px;
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    .cat-bar-stuck .cat-chip {
+      height: 44px; padding: 8px 16px 8px 6px; font-size: 13px; gap: 8px;
     }
     .cat-chip:hover {
-      background: #efefef; color: #111;
-      transform: translateY(-2px);
-    }
-    .cat-chip:hover::after {
-      width: 100%; left: 0;
+      background: #f0f0f0; color: #111; border-color: #d8d8d8;
     }
     .cat-chip.active {
-      background: linear-gradient(135deg, #111 0%, #1f1f1f 100%);
-      border-color: #111; color: #fff; font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      animation: chipScale 0.3s ease-out;
-    }
-    .cat-chip.active::after {
-      width: 100%; left: 0;
-      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      background: #dedede; border-color: #d0d0d0; color: #111;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     /* sub-kategoriya qatori (top'ning ostida) */
@@ -174,8 +159,22 @@
     .page-title {
       font-size: 32px; font-weight: 800; color: #111;
       letter-spacing: -.5px; margin-bottom: 32px;
+      scroll-margin-top: 210px;
     }
     .page-title span { color: #aaa; font-weight: 400; font-size: 20px; margin-left: 10px; }
+    @media (max-width: 640px) { .page-title { scroll-margin-top: 170px; } }
+
+    /* ── Category Sections (Barchasi ko'rinishi) ─── */
+    .cat-sections { display: flex; flex-direction: column; gap: 56px; }
+    .cat-section { scroll-margin-top: 170px; }
+    .cat-section-title {
+      font-size: 22px; font-weight: 700; color: #111;
+      letter-spacing: -.3px; margin-bottom: 20px;
+    }
+    @media (max-width: 640px) {
+      .cat-section { scroll-margin-top: 140px; }
+      .cat-section-title { font-size: 18px; margin-bottom: 14px; }
+    }
 
     /* ── Product Grid ────────────────────── */
     .product-grid {
@@ -260,31 +259,53 @@
       margin-top: auto;
     }
     .qty-wrap {
-      display: flex; align-items: center;
+      display: flex; align-items: center; justify-content: space-between;
       border: 1.5px solid #e5e5e5; border-radius: 8px;
-      overflow: hidden; flex-shrink: 0;
+      overflow: hidden; flex: 0 0 auto;
+      width: 65%; margin: 0 auto;
+      transition: border-color .2s ease, box-shadow .2s ease;
+      animation: qtyWrapIn .22s cubic-bezier(.34,1.56,.64,1);
+    }
+    .qty-wrap:hover { border-color: #ddd; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+    @keyframes qtyWrapIn {
+      0% { transform: scale(1.12); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
     .qty-btn {
-      width: 34px; height: 36px; border: none; background: transparent;
+      width: 34px; height: 36px; flex: 0 0 34px; border: none; background: #f2f2f2;
+      padding: 8px;
       font-size: 16px; color: #555; display: flex; align-items: center; justify-content: center;
-      transition: background .12s; font-weight: 400;
+      transition: background .15s ease, color .15s ease, transform .12s ease; font-weight: 600;
     }
-    .qty-btn:hover { background: #f5f5f5; }
-    .qty-btn:active { background: #eee; }
+    .qty-btn:hover { background: #e9e9e9; color: var(--accent-dark, #c88018); }
+    .qty-btn:active { background: #e0e0e0; transform: scale(.88); }
     .qty-num {
       width: 32px; text-align: center; font-size: 14px; font-weight: 700; color: #111;
-      border-left: 1.5px solid #e5e5e5; border-right: 1.5px solid #e5e5e5;
+      border: none;
       line-height: 36px;
+      transition: transform .15s ease, color .15s ease;
+    }
+    .qty-wrap:has(.qty-btn:active) .qty-num { animation: qtyPop .22s ease; }
+    @keyframes qtyPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.18); color: var(--accent-dark, #c88018); }
+      100% { transform: scale(1); }
     }
     .add-btn {
       flex: 1; height: 36px; border-radius: 8px; border: none;
       background: var(--accent); color: #fff;
       font-size: 13px; font-weight: 700;
       box-shadow: 0 2px 8px rgba(232,160,32,.3);
-      transition: all .15s; white-space: nowrap;
+      transition: background .15s ease, box-shadow .15s ease,
+                  transform .22s cubic-bezier(.34,1.56,.64,1), border-radius .22s ease;
+      white-space: nowrap;
     }
     .add-btn:hover:not(.btn-added) { background: var(--accent-dark); box-shadow: 0 4px 14px rgba(232,160,32,.4); }
-    .add-btn:active:not(.btn-added) { transform: scale(.97); }
+    .add-btn:active:not(.btn-added) {
+      transform: scaleX(.82) scaleY(.94);
+      border-radius: 18px;
+      box-shadow: 0 1px 4px rgba(232,160,32,.35);
+    }
     .add-btn:disabled { background: #f0f0f0; color: #ccc; box-shadow: none; cursor: not-allowed; }
     .add-btn.btn-added { background: #22c55e !important; color: #fff !important; box-shadow: 0 2px 8px rgba(34,197,94,.35) !important; pointer-events: none; }
 
@@ -464,9 +485,12 @@
       .page-body    { padding: 24px 16px 80px; }
       .page-title   { font-size: 24px; margin-bottom: 20px; }
       .cat-bar      { top: 56px; }
-      .cat-bar-sub  { top: 112px; }
-      .cat-bar-inner{ padding: 0 16px; height: 60px; gap: 10px; }
-      .cat-chip { height: 36px; padding: 0 16px; font-size: 13px; }
+      .cat-bar-sub  { top: auto; }
+      .cat-bar-inner{ padding: 10px 16px; gap: 16px; }
+      .cat-chip { height: 62px; padding: 10px 18px 10px 8px; font-size: 14px; gap: 10px; }
+      .cat-chip-thumb { width: 48px; height: 48px; }
+      .cat-bar-stuck .cat-chip { height: 40px; padding: 6px 14px 6px 6px; font-size: 12px; gap: 6px; }
+      .cat-bar-stuck .cat-chip-thumb { width: 26px; height: 26px; }
       .cat-chip-sub { height: 32px; padding: 0 14px; font-size: 12px; }
       .product-name { font-size: 13px; }
       .product-price{ font-size: 15px; }
@@ -519,7 +543,7 @@
     .nav-btn svg { width: 21px; height: 21px; fill: currentColor; transition: .3s ease; }
     .nav-label {
       font-size: 9.5px; font-weight: 600; margin-top: 3px; color: currentColor;
-      letter-spacing: .01em;
+      letter-spacing: .01em; transition: transform .25s ease;
     }
     .nav-btn.nav-active { color: rgba(10,10,30,0.9); }
     .nav-btn.nav-active .nav-icon-wrap {
@@ -527,6 +551,16 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
     }
     .nav-btn:active .nav-icon-wrap { transform: scale(.88); }
+    @media (hover: hover) {
+      .nav-btn:hover { color: rgba(20,20,40,0.9); }
+      .nav-btn:hover .nav-icon-wrap {
+        background: rgba(255,255,255,0.45);
+        transform: translateY(-3px);
+      }
+      .nav-btn:hover svg { transform: scale(1.12); }
+      .nav-btn.nav-active:hover .nav-icon-wrap { background: rgba(255,255,255,0.85); }
+      .nav-btn:hover .nav-label { transform: translateY(1px); }
+    }
     .nav-cart-badge {
       position: absolute; top: -3px; right: 2px;
       background: linear-gradient(135deg,#1a1a1a,#333);
@@ -606,6 +640,8 @@
     .drawer-cat-btn:hover { background: #fff8f6; }
     .drawer-cat-btn.dc-active { background: #fff2ee; color: var(--coral-dark); font-weight: 850; }
     .drawer-cat-btn .dc-label { flex: 1; }
+    .dc-thumb { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; flex-shrink: 0; margin-right: 12px; }
+    .dc-sub .dc-thumb { width: 26px; height: 26px; border-radius: 7px; margin-right: 0; }
     .drawer-cat-btn .dc-dot {
       width: 8px; height: 8px; border-radius: 50%;
       background: var(--coral); opacity: 0; flex-shrink: 0;
@@ -641,16 +677,7 @@
     .add-btn:hover:not(:disabled) { background: #e6ac00 !important; }
     .add-btn:disabled { background: #f0f0f0 !important; color: #ccc !important; box-shadow: none !important; }
     @media (max-width: 640px) {
-      .qty-wrap { flex: 0 0 65%; }
-      .add-btn  { flex: 0 0 calc(35% - 8px); font-size: 0 !important; padding: 0 !important; }
-      .add-btn::after {
-        content: '';
-        display: block; width: 20px; height: 20px;
-        margin: 0 auto;
-        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z'%3E%3C/path%3E%3Cline x1='3' y1='6' x2='21' y2='6'%3E%3C/line%3E%3Cpath d='M16 10a4 4 0 0 1-8 0'%3E%3C/path%3E%3C/svg%3E") center/20px no-repeat;
-      }
-      .add-btn.btn-tugadi { font-size: 11px !important; }
-      .add-btn.btn-tugadi::after { display: none; }
+      .qty-wrap { flex: 0 0 auto; }
     }
 
     /* ── Magic orb ───────────────────────────── */
@@ -668,20 +695,50 @@
     .page-body { padding-bottom: 100px !important; }
 
     /* ── Kategoriya chip rasmi ── */
-    .cat-chip { display: inline-flex; align-items: center; gap: 8px; }
     .cat-chip-thumb {
-      width: 28px; height: 28px; border-radius: 6px; object-fit: cover;
-      margin-left: -4px; flex-shrink: 0;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      transition: transform 0.3s ease;
+      width: 56px; height: 56px; border-radius: 8px; object-fit: cover;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  width 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cat-bar-stuck .cat-chip-thumb {
+      width: 30px; height: 30px; border-radius: 6px;
     }
     .cat-chip:hover .cat-chip-thumb {
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
+
+    /* ── Sub-kategoriyasi bor chip'lardagi strelka ── */
+    .cat-chip-arrow {
+      display: inline-flex; align-items: center; justify-content: center;
+      color: #b5b0ac; flex-shrink: 0; margin-left: -4px; padding: 4px; border-radius: 50%;
+      transition: color 0.3s ease, background-color 0.2s ease, transform 0.2s ease;
+    }
+    .cat-chip:hover .cat-chip-arrow, .cat-chip.active .cat-chip-arrow { color: #888; }
+    .cat-chip-arrow:hover { background: rgba(0,0,0,0.06); }
+    .cat-chip-arrow.open { transform: rotate(180deg); color: #111; }
+
+    /* ── Sub-kategoriya dropdown (chip strelkasi bosilganda) ── */
+    .cat-subdrop-overlay { position: fixed; inset: 0; z-index: 150; }
+    .cat-subdrop {
+      position: fixed; z-index: 151; min-width: 200px;
+      background: #fff; border-radius: 14px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+      border: 1px solid #efefef; padding: 8px; display: flex; flex-direction: column; gap: 2px;
+      animation: popIn .18s cubic-bezier(.34,1.4,.64,1) both;
+    }
+    .cat-subdrop-item {
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      padding: 10px 12px; border-radius: 10px; border: none; background: transparent;
+      font-size: 14px; font-weight: 600; color: #222; text-align: left; cursor: pointer;
+      font-family: inherit; transition: background .15s;
+    }
+    .cat-subdrop-item:hover { background: #f5f5f5; }
+    .cat-subdrop-thumb { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
 
     /* ── Banner karusel ── */
     /* Mahsulotlar bloki bilan bir xil kenglikda (page-body bilan mos) */
-    .banner-wrap { max-width: 1400px; margin: 24px auto 28px; padding: 0 24px; }
+    .banner-wrap { max-width: 1400px; margin: 5px auto 28px; padding: 0 24px; }
     .banner-viewport { position: relative; overflow: hidden; border-radius: 16px; }
     .banner-track { display: flex; transition: transform .5s cubic-bezier(.4,0,.2,1); }
     .banner-slide { position: relative; min-width: 100%; aspect-ratio: 2 / 1; background: #f2f2f2; }
@@ -736,21 +793,21 @@
       color: #888; cursor: pointer; font-size: 16px;
     }
     .detail-body {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 0; flex: 1;
+      display: grid; grid-template-columns: 1fr 1fr; align-items: start;
+      gap: 32px; flex: 1; background: #fff; padding: 24px 24px 0;
     }
     @media (max-width: 640px) {
-      .detail-body { grid-template-columns: 1fr; }
+      .detail-body { grid-template-columns: 1fr; gap: 20px; padding: 16px 16px 0; }
     }
     .detail-img-side {
-      background: #fafafa; display: flex; align-items: center; justify-content: center;
-      padding: 40px; min-height: 320px;
-      border-right: 1px solid #f0f0f0;
+      display: flex; align-items: center; justify-content: center;
+      width: 80%; margin: 0 auto; aspect-ratio: 1.2 / 1; border-radius: 20px;
+      overflow: hidden;
     }
     @media (max-width: 640px) {
-      .detail-img-side { min-height: 260px; padding: 28px; border-right: none; border-bottom: 1px solid #f0f0f0; }
+      .detail-img-side { border-radius: 16px; }
     }
-    .detail-img-side img { max-width: 100%; max-height: 380px; object-fit: contain; }
+    .detail-img-side img { width: 100%; height: 100%; object-fit: contain; border-radius: 20px; display: block; }
     .detail-info-side { padding: 36px 32px; display: flex; flex-direction: column; gap: 0; }
     @media (max-width: 640px) { .detail-info-side { padding: 24px 20px; } }
     .detail-cat { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
@@ -959,6 +1016,7 @@ const ISearch = ({s=20}) => html`<${Ic} size=${s}><circle cx="11" cy="11" r="8"/
 const ICart   = ({s=20}) => html`<${Ic} size=${s}><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></${Ic}>`
 const IUser   = ({s=20}) => html`<${Ic} size=${s}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></${Ic}>`
 const IX      = ({s=16}) => html`<${Ic} size=${s} sw=${2.2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></${Ic}>`
+const IChevronDown = ({s=12}) => html`<${Ic} size=${s} sw=${2.6}><path d="M6 9l6 6 6-6"/></${Ic}>`
 const ICaret  = ({s=12}) => html`<${Ic} size=${s} sw=${2.5}><polyline points="6 9 12 15 18 9"/></${Ic}>`
 const IBox    = ({s=40}) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="#d0d0d0" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
 
@@ -1131,7 +1189,7 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
 }
 
 // ── CategoryDrawer ────────────────────────────────────────────────────
-function CategoryDrawer({ open, onClose, cats, selTop, selSub, onSelect }) {
+function CategoryDrawer({ open, onClose, cats, selTop, selSub, onSelect, catImgs }) {
   const [q, setQ] = useState('')
   const [exp, setExp] = useState({})
   const ql = q.trim().toLowerCase()
@@ -1151,19 +1209,13 @@ function CategoryDrawer({ open, onClose, cats, selTop, selSub, onSelect }) {
         </div>
       </div>
       <div className="cat-drawer-list">
-        <div className="drawer-cat-item">
-          <button className=${'drawer-cat-btn'+(selTop===null&&selSub===null?' dc-active':'')}
-            onClick=${()=>pick(null,null)}>
-            <span className="dc-label">Barchasi</span>
-            <span className="dc-dot"></span>
-          </button>
-        </div>
         ${tops.map(t => {
           const subs = childrenOf(t.id)
           const parentActive = selTop===t.id && selSub==null
           if (subs.length === 0) return html`
             <div key=${t.id} className="drawer-cat-item">
               <button className=${'drawer-cat-btn'+(parentActive?' dc-active':'')} onClick=${()=>pick(t.id,null)}>
+                ${catImgs[t.id] && html`<img className="dc-thumb" src=${media(catImgs[t.id])} alt=""/>`}
                 <span className="dc-label">${t.name}</span>
                 <span className="dc-dot"></span>
               </button>
@@ -1174,6 +1226,7 @@ function CategoryDrawer({ open, onClose, cats, selTop, selSub, onSelect }) {
             <div key=${t.id} className="drawer-cat-item">
               <button className=${'drawer-cat-btn'+(parentActive?' dc-active':'')}
                 onClick=${()=>setExp(e=>({...e,[t.id]:!isOpen}))}>
+                ${catImgs[t.id] && html`<img className="dc-thumb" src=${media(catImgs[t.id])} alt=""/>`}
                 <span className="dc-label">${t.name}</span>
                 <span className=${'dc-chevron'+(isOpen?' open':'')}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
@@ -1185,7 +1238,9 @@ function CategoryDrawer({ open, onClose, cats, selTop, selSub, onSelect }) {
                 </button>
                 ${vSubs.map(s => html`
                   <button key=${s.id} className=${'dc-sub'+(selSub===s.id?' dc-active':'')} onClick=${()=>pick(t.id,s.id)}>
-                    <span className="dc-bar"></span><span className="dc-label">${s.name}</span>
+                    <span className="dc-bar"></span>
+                    ${catImgs[s.id] && html`<img className="dc-thumb" src=${media(catImgs[s.id])} alt=""/>`}
+                    <span className="dc-label">${s.name}</span>
                   </button>`)}
               </${React.Fragment}>`}
             </div>`
@@ -1310,7 +1365,7 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
           : inCart > 0
             // Savatda bo'lsa — Uzumdek +/- stepper (cart qty'ni boshqaradi)
             ? html`
-              <div className="qty-wrap" style=${{flex:1}}>
+              <div className="qty-wrap">
                 <button className="qty-btn" onClick=${e=>{e.stopPropagation();setQty(cartKey, inCart-1)}}>−</button>
                 <span className="qty-num">${fmtQty(inCart)}</span>
                 <button className="qty-btn" onClick=${e=>{e.stopPropagation(); if(maxQty===Infinity||inCart<maxQty) onAdd(p, unit, addBtnRef.current)}}>+</button>
@@ -1760,6 +1815,55 @@ function App() {
   const searchRef  = useRef(null)
   const navCartRef = useRef(null)
 
+  const [catStuck, setCatStuck] = useState(false)
+  const catSentinelRef = useRef(null)
+
+  const [activeCat, setActiveCat] = useState(null)
+  const [scrollToCatId, setScrollToCatId] = useState(null)
+  const sectionRefs = useRef({})
+
+  const [subDropdown, setSubDropdown] = useState(null)
+  const chipRefs = useRef({})
+  const pageTitleRef = useRef(null)
+
+  useEffect(() => {
+    if (!subDropdown) return
+    const close = () => setSubDropdown(null)
+    const onKey = e => { if (e.key === 'Escape') close() }
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [subDropdown])
+
+  const toggleSubDropdown = (catId, chipEl) => {
+    setSubDropdown(sd => {
+      if (sd && sd.catId === catId) return null
+      const rect = chipEl.getBoundingClientRect()
+      return { catId, top: rect.bottom + 8, left: rect.left }
+    })
+  }
+
+  const pickSubFromDropdown = (topId, subId) => {
+    setSelTop(topId); setSelSub(subId); setSubDropdown(null)
+    pageTitleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  useEffect(() => {
+    const el = catSentinelRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => setCatStuck(!entry.isIntersecting),
+      { rootMargin: '-64px 0px 0px 0px', threshold: 0 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [cats])
+
   useEffect(() => { api('/storefront/info/').then(setInfo).catch(()=>{}) }, [])
 
   // dukonline.uz "Online do'kon → Bannerlar" bo'limidan yuklangan rasmlar bo'lsa
@@ -1797,6 +1901,9 @@ function App() {
 
   const topCats = useMemo(()=>cats.filter(c=>!c.parentId), [cats])
   const subCats = useMemo(()=>selTop==null?[]:cats.filter(c=>c.parentId===selTop), [cats, selTop])
+  // "Barchasi" olib tashlanganligi sababli, hech qaysi bo'lim scroll orqali
+  // aniqlanmagan bo'lsa (masalan sahifa boshida) birinchi kategoriya yoritiladi
+  const displayActiveCat = activeCat || (topCats[0] ? String(topCats[0].id) : null)
 
   const filtered = useMemo(() => {
     let l = products
@@ -1805,6 +1912,42 @@ function App() {
     if (search)      l = l.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
     return l
   }, [products, selTop, selSub, search])
+
+  // "Barchasi" ko'rinishida mahsulotlarni top-kategoriya bo'yicha bo'limlarga guruhlash
+  // (scroll qilganda cat-bar'da tegishli kategoriya avtomatik yoritiladi)
+  const groupedSections = useMemo(() => {
+    if (selTop !== null || search || topCats.length === 0) return null
+    const byCat = new Map(topCats.map(c => [c.id, []]))
+    filtered.forEach(p => {
+      const topId = p.category_parent_id || p.category_id
+      if (byCat.has(topId)) byCat.get(topId).push(p)
+    })
+    return topCats.map(c => ({ cat: c, items: byCat.get(c.id) || [] })).filter(g => g.items.length > 0)
+  }, [filtered, topCats, selTop, search])
+
+  useEffect(() => {
+    if (!groupedSections || groupedSections.length === 0) return
+    const els = groupedSections.map(g => sectionRefs.current[g.cat.id]).filter(Boolean)
+    if (!els.length) return
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(entry => { if (entry.isIntersecting) setActiveCat(entry.target.dataset.catId) })
+    }, { rootMargin: '-160px 0px -70% 0px', threshold: 0 })
+    els.forEach(el => obs.observe(el))
+    return () => obs.disconnect()
+  }, [groupedSections])
+
+  useEffect(() => {
+    if (!scrollToCatId) return
+    const el = sectionRefs.current[scrollToCatId]
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setScrollToCatId(null)
+  }, [scrollToCatId, groupedSections])
+
+  const goToCat = (id) => {
+    if (selTop !== null) { setSelTop(null); setSelSub(null) }
+    setActiveCat(String(id))
+    setScrollToCatId(id)
+  }
 
   const total = cart.reduce((s,it)=>s+it.price*it.qty, 0)
   const count = cart.reduce((s,it)=>s+it.qty, 0)
@@ -1914,20 +2057,37 @@ function App() {
       </div>
     </header>
 
+    <!-- ── Banner carousel ──────────────────────────────────── -->
+    <${BannerCarousel} banners=${banners}/>
+
     <!-- ── Category bar (top) ──────────────────────────────── -->
+    <div ref=${catSentinelRef}></div>
     ${topCats.length > 0 && html`
-      <nav className="cat-bar">
+      <nav className=${'cat-bar'+(catStuck?' cat-bar-stuck':'')}>
         <div className="cat-bar-inner">
-          <button className=${'cat-chip'+(selTop===null?' active':'')} onClick=${()=>{setSelTop(null);setSelSub(null)}}>
-            Barchasi
-          </button>
           ${topCats.map(c => html`
-            <button key=${c.id} className=${'cat-chip'+(selTop===c.id?' active':'')} onClick=${()=>{setSelTop(c.id);setSelSub(null)}}>
+            <button key=${c.id} ref=${el=>{ if(el) chipRefs.current[c.id]=el }}
+              className=${'cat-chip'+((selTop===c.id||(selTop===null&&displayActiveCat===String(c.id))||(subDropdown&&subDropdown.catId===c.id))?' active':'')} onClick=${()=>goToCat(c.id)}>
               ${catImgs[c.id] && html`<img className="cat-chip-thumb" src=${media(catImgs[c.id])} alt=""/>`}
               ${c.name}
+              ${cats.some(sc=>sc.parentId===c.id) && html`<span className=${'cat-chip-arrow'+(subDropdown&&subDropdown.catId===c.id?' open':'')}
+                onClick=${e=>{e.stopPropagation();toggleSubDropdown(c.id, chipRefs.current[c.id])}}><${IChevronDown} s=${11}/></span>`}
             </button>`)}
         </div>
       </nav>`}
+
+    <!-- ── Sub-category dropdown (chip strelkasi bosilganda) ── -->
+    ${subDropdown && html`
+      <${React.Fragment}>
+        <div className="cat-subdrop-overlay" onClick=${()=>setSubDropdown(null)}></div>
+        <div className="cat-subdrop" style=${{top:subDropdown.top+'px', left:subDropdown.left+'px'}}>
+          ${cats.filter(sc=>sc.parentId===subDropdown.catId).map(sub => html`
+            <button key=${sub.id} className="cat-subdrop-item" onClick=${()=>pickSubFromDropdown(subDropdown.catId, sub.id)}>
+              ${catImgs[sub.id] && html`<img className="cat-subdrop-thumb" src=${media(catImgs[sub.id])} alt=""/>`}
+              <span>${sub.name}</span>
+            </button>`)}
+        </div>
+      </${React.Fragment}>`}
 
     <!-- ── Sub-category bar (tanlangan top'da sub bo'lsa) ───── -->
     ${subCats.length > 0 && html`
@@ -1943,12 +2103,9 @@ function App() {
         </div>
       </nav>`}
 
-    <!-- ── Banner carousel ──────────────────────────────────── -->
-    <${BannerCarousel} banners=${banners}/>
-
     <!-- ── Page body ───────────────────────────────────────── -->
     <main className="page-body">
-      <h1 className="page-title">
+      <h1 className="page-title" ref=${pageTitleRef}>
         ${catName || 'Katalog'}
         ${!loading && html`<span>${filtered.length} ta mahsulot</span>`}
       </h1>
@@ -1965,7 +2122,20 @@ function App() {
       </div></div>`}
 
       <!-- Grid -->
-      ${!loading && !error && filtered.length>0 && html`
+      ${!loading && !error && filtered.length>0 && groupedSections && html`
+        <div className="cat-sections">
+          ${groupedSections.map(g => html`
+            <section key=${g.cat.id} id=${'cat-sec-'+g.cat.id} data-cat-id=${g.cat.id} className="cat-section"
+              ref=${el => { if (el) sectionRefs.current[g.cat.id] = el }}>
+              <h2 className="cat-section-title">${g.cat.name}</h2>
+              <div className="product-grid">
+                ${g.items.map(p => html`
+                  <${ProductItem} key=${p.id} p=${p} onAdd=${addToCart} setQty=${updQty} cart=${cart} showImages=${showImages}
+                    onDetail=${setDetail}/>`)}
+              </div>
+            </section>`)}
+        </div>`}
+      ${!loading && !error && filtered.length>0 && !groupedSections && html`
         <div className="product-grid">
           ${filtered.map(p => html`
             <${ProductItem} key=${p.id} p=${p} onAdd=${addToCart} setQty=${updQty} cart=${cart} showImages=${showImages}
@@ -2002,7 +2172,7 @@ function App() {
     <!-- ── Category Drawer ───────────────────── -->
     <${CategoryDrawer}
       open=${drawerOpen} onClose=${()=>setDrawer(false)}
-      cats=${cats} selTop=${selTop} selSub=${selSub}
+      cats=${cats} selTop=${selTop} selSub=${selSub} catImgs=${catImgs}
       onSelect=${(top,sub)=>{setSelTop(top);setSelSub(sub);setNavActive('home')}}/>
 
     <!-- ── Bottom Nav ────────────────────────── -->
@@ -2010,7 +2180,7 @@ function App() {
       active=${navActive}
       count=${count}
       cartIconRef=${navCartRef}
-      onHome=${()=>{setSelTop(null);setSelSub(null);setSearch('');setSrchOpen(false);setNavActive('home');window.scrollTo({top:0,behavior:'smooth'})}}
+      onHome=${()=>{setSelTop(null);setSelSub(null);setActiveCat(null);setSearch('');setSrchOpen(false);setNavActive('home');window.scrollTo({top:0,behavior:'smooth'})}}
       onSearch=${()=>{setSrchOpen(s=>!s);setNavActive('search')}}
       onCart=${()=>{setCartOpen(true);setNavActive('cart');setTimeout(()=>setNavActive('home'),300)}}
       onDrawer=${()=>{setDrawer(d=>!d);setNavActive('catalog')}}/>
