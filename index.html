@@ -252,6 +252,19 @@
     @media (max-width: 480px)  { .product-grid { grid-template-columns: repeat(2,1fr); gap: 22px 12px; } }
     @media (max-width: 340px)  { .product-grid { grid-template-columns: 1fr; } }
 
+    /* ── Top tovarlar (tavsiya karusel) ──── */
+    .top-rail-wrap { margin: 4px 0 32px; }
+    .top-rail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .top-rail-head h2 { font-size: 20px; font-weight: 800; color: #111; margin: 0; }
+    .top-rail-badge { font-size: 12px; font-weight: 700; color: #e8590c; background: #fff4e6; padding: 3px 11px; border-radius: 20px; white-space: nowrap; }
+    .top-rail { display: flex; gap: 24px; overflow-x: auto; padding: 4px 2px 12px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+    .top-rail::-webkit-scrollbar { height: 6px; }
+    .top-rail::-webkit-scrollbar-track { background: transparent; }
+    .top-rail::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 3px; }
+    .top-rail-item { flex: 0 0 auto; width: 210px; scroll-snap-align: start; }
+    @media (max-width: 860px) { .top-rail { gap: 16px; } .top-rail-item { width: 170px; } }
+    @media (max-width: 480px) { .top-rail-item { width: 150px; } .top-rail-head h2 { font-size: 18px; } }
+
     /* ── Product Item ─────────────────────── */
     .product-item {
       display: flex; flex-direction: column; gap: 0;
@@ -2094,6 +2107,7 @@ function BannerCarousel({ banners }) {
 function App() {
   const [info,      setInfo]     = useState(null)
   const [products,  setProds]    = useState([])
+  const [topIds,    setTopIds]   = useState([])   // eng ko'p sotilgan tovar ID'lari (tavsiya)
   const [cats,      setCats]     = useState([])
   const [showImages,setShowImg]  = useState(true)
   const [catImgs,   setCatImgs]  = useState({})
@@ -2172,6 +2186,12 @@ function App() {
 
   useEffect(() => { api('/storefront/info/').then(setInfo).catch(()=>{}) }, [])
 
+  // Eng ko'p sotilgan tovarlar (tavsiya bo'limi) — faqat ID'lar, yuklangan
+  // mahsulotlar bilan solishtiriladi (topProducts)
+  useEffect(() => {
+    api('/storefront/top-products/?limit=12').then(r => setTopIds(r.product_ids || [])).catch(()=>{})
+  }, [])
+
   // dukonline.uz "Online do'kon → Bannerlar" bo'limidan yuklangan rasmlar bo'lsa
   // o'shalar ko'rsatiladi, hali hech narsa yuklanmagan bo'lsa — namuna rasmlar.
   const banners = useMemo(() => {
@@ -2204,6 +2224,13 @@ function App() {
 
   const doLogin = c => { setCust(c); localStorage.setItem('sf_cust',JSON.stringify(c)); setLoginOpen(false) }
   const logout  = () => { setCust(null); localStorage.removeItem('sf_cust') }
+
+  // Top ID'larni yuklangan mahsulot obyektlariga bog'laymiz (rank tartibi saqlanadi)
+  const topProducts = useMemo(() => {
+    if (!topIds.length || !products.length) return []
+    const byId = new Map(products.map(p => [p.id, p]))
+    return topIds.map(id => byId.get(id)).filter(Boolean)
+  }, [topIds, products])
 
   const topCats = useMemo(()=>cats.filter(c=>!c.parentId), [cats])
   const subCats = useMemo(()=>selTop==null?[]:cats.filter(c=>c.parentId===selTop), [cats, selTop])
@@ -2415,6 +2442,21 @@ function App() {
         ${catName || 'Katalog'}
         ${!loading && html`<span>${filtered.length} ta mahsulot</span>`}
       </h1>
+
+      <!-- Top tovarlar (tavsiya) — faqat bosh sahifada (filtr/qidiruvsiz) -->
+      ${!loading && !error && !search && selTop==null && selSub==null && topProducts.length>0 && html`
+        <div className="top-rail-wrap">
+          <div className="top-rail-head">
+            <h2>🔥 Top tovarlar</h2>
+            <span className="top-rail-badge">Eng ko'p sotilgan</span>
+          </div>
+          <div className="top-rail">
+            ${topProducts.map(p => html`
+              <div className="top-rail-item" key=${p.id}>
+                <${ProductItem} p=${p} onAdd=${addToCart} setQty=${updQty} cart=${cart} showImages=${showImages} onDetail=${setDetail}/>
+              </div>`)}
+          </div>
+        </div>`}
 
       <!-- States -->
       ${loading && html`<${Skeleton}/>`}
