@@ -422,6 +422,10 @@
     }
     .state-emoji { font-size: 44px; margin-bottom: 16px; }
     .state-text  { font-size: 15px; color: var(--ink-soft); font-weight: 400; }
+    .fallback-label {
+      font-size: 12px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase;
+      letter-spacing: .06em; text-align: center; margin: 0 0 24px;
+    }
 
     /* ── Overlay / Sheet ─────────────────── */
     .overlay-bg {
@@ -978,6 +982,16 @@
       padding-top: 22px; border-top: 1px solid var(--line-soft); margin-top: 8px; text-align: justify;
       font-weight: 400;
     }
+    /* ── Similar products rail ─────────────── */
+    .detail-similar { max-width: 1040px; margin: 0 auto; padding: 8px 28px 100px; }
+    @media (max-width: 640px) { .detail-similar { padding: 4px 18px 100px; } }
+    .detail-similar-title {
+      font-size: 12px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase;
+      letter-spacing: .06em; margin: 0 0 18px; padding-top: 28px; border-top: 1px solid var(--line-soft);
+    }
+    .detail-similar-rail { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 8px; align-items: center; justify-content: center; }
+    .detail-similar-item { flex: 0 0 148px; width: 148px; }
+    @media (max-width: 640px) { .detail-similar-item { flex-basis: 128px; width: 128px; } }
     .variant-chip {
       display: flex; flex-direction: column; align-items: flex-start;
       height: auto !important; padding: 8px 14px !important;
@@ -1182,6 +1196,35 @@ const fmtQty = n => Number.isInteger(+n) ? String(+n) : String(+(+n).toFixed(3))
 const PM_LABELS = { cash:'Naqd', card:'Karta', transfer:"O'tkazma", credit:'Nasiya', mixed:'Aralash', click:'Click', payme:'Payme', uzum:'Uzum', humo:'Humo', uzcard:'UzCard', installment:"Bo'lib to'lash", exchange_credit:'Ayirboshlash' }
 const pmLabel = m => PM_LABELS[m] || (m || '—')
 const media = u => !u ? '' : u.startsWith('http') ? u : API_URL.replace(/\/api\/?$/,'') + u
+// Bir xil narxdagi mahsulotni tez topish uchun taxminiy narx
+const approxPrice = p => p.units?.[0]?.price ?? p.variants?.[0]?.price ?? 0
+// O'xshash mahsulotlar: bir xil kategoriya (avval o'z kategoriyasi, keyin ota-kategoriya),
+// narxi yaqinroqlari birinchi bo'lib chiqadi. Backend chaqiruvisiz, xotiradagi ro'yxatdan.
+const similarProducts = (p, all, limit=10) => {
+  if (!p) return []
+  const sameCat = [], sameParent = []
+  for (const x of all) {
+    if (x.id === p.id) continue
+    if (p.category_id && x.category_id === p.category_id) sameCat.push(x)
+    else if (p.category_parent_id && x.category_parent_id === p.category_parent_id) sameParent.push(x)
+  }
+  const basePrice = approxPrice(p)
+  const byCloseness = list => [...list].sort((a,b) => Math.abs(approxPrice(a)-basePrice) - Math.abs(approxPrice(b)-basePrice))
+  return [...byCloseness(sameCat), ...byCloseness(sameParent)].slice(0, limit)
+}
+// Qidiruvga aniq mos kelmagan taqdirda: nom/kategoriya so'zlari mos kelgan mahsulotlarni taklif qilish
+const searchSuggestions = (query, all, limit=8) => {
+  const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return []
+  const scored = []
+  for (const p of all) {
+    const hay = (p.name+' '+(p.category_name||'')+' '+(p.category_parent_name||'')).toLowerCase()
+    const score = words.reduce((s,w) => s + (hay.includes(w) ? 1 : 0), 0)
+    if (score > 0) scored.push([p, score])
+  }
+  scored.sort((a,b) => b[1]-a[1])
+  return scored.slice(0, limit).map(s => s[0])
+}
 // Hozircha do'konda banner yuklanmagan bo'lsa ko'rsatiladigan namuna rasmlar
 const DEMO_BANNERS = [
   'banners_img/4d82f95b9703cc6d055e0d64e25ee322.jpg',
@@ -1219,9 +1262,10 @@ function magicOrb(fromEl, toEl) {
 }
 
 // ── ProductDetail ─────────────────────────────────────────────────────
-function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
+function ProductDetail({ product, onClose, onAdd, onAddVariant, cart, allProducts, setCartQty, showImages, onSelect }) {
   const p = product
   const hasVariants = !!(p.has_variants && p.variants?.length)
+  const similar = useMemo(() => similarProducts(p, allProducts||[], 10), [p, allProducts])
 
   const _firstInStock = hasVariants
     ? (p.variants.find(v => v.in_stock) || p.variants[0])
@@ -1369,6 +1413,18 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
           ${p.description && html`<p className="detail-desc">${p.description}</p>`}
         </div>
       </div>
+
+      <!-- Similar products -->
+      ${similar.length > 0 && html`
+        <div className="detail-similar">
+          <div className="detail-similar-title">O'xshash mahsulotlar</div>
+          <div className="detail-similar-rail">
+            ${similar.map(sp => html`
+              <div className="detail-similar-item" key=${sp.id}>
+                <${ProductItem} p=${sp} onAdd=${onAdd} setQty=${setCartQty} cart=${cart} showImages=${showImages} onDetail=${onSelect}/>
+              </div>`)}
+          </div>
+        </div>`}
     </div>`
 }
 
@@ -2219,6 +2275,12 @@ function App() {
     return l
   }, [products, selTop, selSub, search])
 
+  // Qidiruv aniq mos kelmasa — nom/kategoriya so'zlari ustma-ust tushgan mahsulotlarni taklif qilamiz
+  const searchFallback = useMemo(() => {
+    if (!search || filtered.length > 0) return []
+    return searchSuggestions(search, products, 8)
+  }, [search, filtered, products])
+
   // "Barchasi" ko'rinishida mahsulotlarni top-kategoriya bo'yicha bo'limlarga guruhlash
   // (scroll qilganda cat-bar'da tegishli kategoriya avtomatik yoritiladi)
   const groupedSections = useMemo(() => {
@@ -2422,10 +2484,23 @@ function App() {
         <div className="state-emoji">😕</div>
         <div className="state-text">Xatolik yuz berdi: ${error}</div>
       </div></div>`}
-      ${!loading && !error && filtered.length===0 && html`<div className="product-grid"><div className="state-center">
+      ${!loading && !error && filtered.length===0 && searchFallback.length===0 && html`<div className="product-grid"><div className="state-center">
         <div className="state-emoji">🔍</div>
         <div className="state-text">Mahsulot topilmadi</div>
       </div></div>`}
+      ${!loading && !error && filtered.length===0 && searchFallback.length>0 && html`
+        <div>
+          <div className="state-center" style=${{padding:'56px 20px 8px'}}>
+            <div className="state-emoji">🔍</div>
+            <div className="state-text">"${search}" bo'yicha aniq mos kelmadi</div>
+          </div>
+          <div className="fallback-label">Shunga o'xshash mahsulotlar</div>
+          <div className="product-grid">
+            ${searchFallback.map(p => html`
+              <${ProductItem} key=${p.id} p=${p} onAdd=${addToCart} setQty=${updQty} cart=${cart} showImages=${showImages}
+                onDetail=${setDetail}/>`)}
+          </div>
+        </div>`}
 
       <!-- Grid -->
       ${!loading && !error && filtered.length>0 && groupedSections && html`
@@ -2473,7 +2548,11 @@ function App() {
       onClose=${()=>setDetail(null)}
       onAdd=${addToCart}
       onAddVariant=${addVariantToCart}
-      cart=${cart}/>`}
+      cart=${cart}
+      allProducts=${products}
+      setCartQty=${updQty}
+      showImages=${showImages}
+      onSelect=${setDetail}/>`}
 
     <!-- ── Category Drawer ───────────────────── -->
     <${CategoryDrawer}
