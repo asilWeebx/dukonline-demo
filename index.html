@@ -966,6 +966,74 @@
       letter-spacing: -0.01em;
     }
     .detail-unit-chip.active { border-color: var(--sage); background: var(--sage-tint); color: var(--sage-deep); font-weight: 600; }
+
+    /* ── Telefon (IMEI) tovari ─────────────────────────────────────── */
+    .ph-from { font-size: 0.62em; font-weight: 500; opacity: .6; margin-left: 4px; }
+    .detail-unit-chip.ph-color { display: inline-flex; align-items: center; gap: 6px; }
+    .ph-dot {
+      width: 11px; height: 11px; border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); flex-shrink: 0;
+    }
+    .ph-dot.lg { width: 16px; height: 16px; }
+    .ph-real-color {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin: 14px 0 4px; padding: 9px 12px; border-radius: 10px;
+      background: var(--sage-tint); font-size: 13px; color: var(--ink);
+    }
+    .ph-note { font-size: 11px; opacity: .55; }
+    .ph-unit-meta { font-size: 12.5px; color: #64748b; margin-top: 6px; }
+
+    .ph-units { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .ph-unit {
+      display: flex; align-items: center; gap: 12px;
+      border: 1px solid #e6e6e6; border-radius: 12px; padding: 11px 13px;
+      transition: border-color .15s;
+    }
+    .ph-unit:hover { border-color: var(--sage); }
+    .ph-unit-l { flex: 1; min-width: 0; }
+    .ph-unit-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .ph-cond {
+      font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px;
+      background: #fef3c7; color: #92400e;
+    }
+    .ph-cond.new { background: #dcfce7; color: #166534; }
+    .ph-bat, .ph-cyc { font-size: 11.5px; color: #64748b; }
+    .ph-imei {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11.5px; color: #94a3b8; margin-top: 3px; letter-spacing: .3px;
+    }
+    .ph-note2 { font-size: 11.5px; color: #94a3b8; margin-top: 2px; }
+    .ph-unit-r { text-align: right; flex-shrink: 0; }
+    .ph-price { font-size: 15px; font-weight: 700; color: var(--ink); }
+    .ph-pick {
+      margin-top: 5px; border: 0; cursor: pointer;
+      background: var(--sage); color: #fff;
+      font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 8px;
+      transition: opacity .15s;
+    }
+    .ph-pick:hover { opacity: .88; }
+    /* Telefon "son bilan" (grouped) bucketlari */
+    .ph-buckets { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .ph-bucket {
+      display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+      border: 1.5px solid #e6e6e6; border-radius: 12px; padding: 11px 13px;
+      background: #fff; cursor: pointer; transition: border-color .15s, background .15s;
+    }
+    .ph-bucket:hover { border-color: var(--sage); }
+    .ph-bucket.active { border-color: var(--sage); background: color-mix(in srgb, var(--sage) 8%, #fff); }
+    .ph-bucket-l { flex: 1; min-width: 0; }
+    .ph-bucket-spec { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .ph-bspec {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12.5px; font-weight: 600; color: var(--ink);
+      background: #f1f5f9; padding: 2px 8px; border-radius: 6px;
+    }
+    .ph-bucket-cnt { font-size: 11.5px; color: #64748b; margin-top: 4px; }
+    .ph-bucket-price { font-size: 15px; font-weight: 700; color: var(--ink); flex-shrink: 0; }
+    .cart-item-imei {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10.5px; color: #94a3b8; margin-top: 1px;
+    }
     .detail-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
     .detail-add-btn {
       flex: 1; height: 52px; border-radius: var(--radius-sm); border: none;
@@ -1232,9 +1300,34 @@ function magicOrb(fromEl, toEl) {
 }
 
 // ── ProductDetail ─────────────────────────────────────────────────────
-function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
+function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onAddBucket, cart }) {
   const p = product
   const hasVariants = !!(p.has_variants && p.variants?.length)
+  // ── Telefon (IMEI) tovari ──────────────────────────────────────────
+  // Karta = MODEL. Ichidagi nusxalar rang+xotira+region bo'yicha
+  // guruhlangan holda keladi (backend). Guruh "uniform" bo'lsa nusxalar
+  // farqsiz — mijoz shunchaki savatga qo'shadi; farq qilsa (b/u) har
+  // nusxa alohida ko'rinadi: batareya, sikl, narx.
+  const phone = p.phone && (p.phone.groups?.length || p.phone.buckets?.length) ? p.phone : null
+  // "son bilan" (grouped) — spec+narx bucket, mijoz son tanlaydi;
+  // "dona-dona" (individual) — har IMEI alohida (guruh + units)
+  const isGrouped = !!(phone && phone.mode === 'grouped')
+  const phGroups = phone && !isGrouped ? phone.groups : []
+  const phBuckets = phone && isGrouped ? (phone.buckets || []) : []
+  const [phKey, setPhKey] = useState(phGroups[0]?.key ?? null)
+  const [phBKey, setPhBKey] = useState(phBuckets[0]?.key ?? null)
+  const phSel = phone && !isGrouped ? (phGroups.find(g => g.key === phKey) || phGroups[0]) : null
+  const phBSel = phBuckets.find(b => b.key === phBKey) || phBuckets[0] || null
+  const phStorages = [...new Set(phGroups.map(g => g.storage).filter(Boolean))]
+  const phColors = phGroups.filter(g => !phSel?.storage || g.storage === phSel.storage)
+  const phRegions = phColors.filter(g => !phSel?.color || g.color === phSel.color)
+  const pickPhone = (patch) => {
+    const want = { storage: phSel?.storage, color: phSel?.color, region: phSel?.region, ...patch }
+    const g = phGroups.find(x => x.storage === want.storage && x.color === want.color && x.region === want.region)
+      || phGroups.find(x => x.storage === want.storage && x.color === want.color)
+      || phGroups.find(x => x.storage === want.storage)
+    if (g) setPhKey(g.key)
+  }
 
   const _firstInStock = hasVariants
     ? (p.variants.find(v => v.in_stock) || p.variants[0])
@@ -1307,8 +1400,11 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
           ${p.category_name && html`<div className="detail-cat">${p.category_name}</div>`}
           <h1 className="detail-name">${p.name}</h1>
           <div className="detail-price">
-            ${dispOrigVal && html`<span className="price-orig-strike">${money(dispOrigVal, dispCur)}</span>`}
-            ${money(dispVal, dispCur)}
+            ${phone
+              ? html`${money(phSel?.from_cur_price ?? phSel?.from_price ?? 0, phSel?.currency ?? '')}
+                     ${(phSel?.count > 1 || phGroups.length > 1) && html`<span className="ph-from">dan</span>`}`
+              : html`${dispOrigVal && html`<span className="price-orig-strike">${money(dispOrigVal, dispCur)}</span>`}
+                     ${money(dispVal, dispCur)}`}
             ${p.discount_percent > 0 && html`<span className="disc-badge">−${Math.round(p.discount_percent)}%</span>`}
           </div>
 
@@ -1340,12 +1436,119 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
                 </button>`)}
             </div>`}
 
+          <!-- ── Telefon (dona-dona): konfiguratsiya + nusxa tanlash ─── -->
+          ${phone && !isGrouped && html`
+            ${phStorages.length > 1 && html`
+              <div className="detail-unit-label">Xotira</div>
+              <div className="detail-unit-select">
+                ${phStorages.map(st => html`
+                  <button key=${st} className=${'detail-unit-chip'+(phSel?.storage===st?' active':'')}
+                    onClick=${()=>pickPhone({storage:st})}>${st}</button>`)}
+              </div>`}
+
+            ${phColors.length > 1 && html`
+              <div className="detail-unit-label">Rang</div>
+              <div className="detail-unit-select">
+                ${phColors.map(g => html`
+                  <button key=${g.key} className=${'detail-unit-chip ph-color'+(phSel?.color===g.color?' active':'')}
+                    onClick=${()=>pickPhone({storage:g.storage, color:g.color})}>
+                    ${g.color_hex && html`<i className="ph-dot" style=${{background:g.color_hex}}></i>`}
+                    ${g.color_label || 'Rang'}
+                  </button>`)}
+              </div>`}
+
+            ${phRegions.length > 1 && html`
+              <div className="detail-unit-label">Region</div>
+              <div className="detail-unit-select">
+                ${phRegions.map(g => html`
+                  <button key=${g.key} className=${'detail-unit-chip'+(phSel?.region===g.region?' active':'')}
+                    onClick=${()=>pickPhone({storage:g.storage, color:g.color, region:g.region})}>
+                    ${g.region || '—'}
+                  </button>`)}
+              </div>`}
+
+            <!-- Rasm umumiy bo'lgani uchun HAQIQIY rangni alohida ko'rsatamiz -->
+            ${phSel?.color_label && html`
+              <div className="ph-real-color">
+                ${phSel.color_hex && html`<i className="ph-dot lg" style=${{background:phSel.color_hex}}></i>`}
+                Haqiqiy rangi: <b>${phSel.color_label}</b>
+                <span className="ph-note">rasm namunaviy</span>
+              </div>`}
+
+            ${phSel && phSel.uniform
+              ? html`
+                <div className="detail-stock ok">✓ Mavjud: ${phSel.count} ta</div>
+                <div className="ph-unit-meta">
+                  ${phSel.units[0].condition_label}
+                  ${phSel.units[0].battery_health != null && html` · 🔋 ${phSel.units[0].battery_health}%`}
+                  ${phSel.units[0].battery_cycles != null && html` · ${phSel.units[0].battery_cycles} sikl`}
+                </div>
+                <div className="detail-controls">
+                  <button className="detail-add-btn" onClick=${e=>onAddSerial(p, phSel.units[0], e.currentTarget)}>
+                    Savatga qo'shish
+                  </button>
+                </div>`
+              : phSel && html`
+                <div className="detail-unit-label">Mavjud nusxalar (${phSel.count} ta)</div>
+                <div className="ph-units">
+                  ${phSel.units.map(u => html`
+                    <div key=${u.id} className="ph-unit">
+                      <div className="ph-unit-l">
+                        <div className="ph-unit-top">
+                          <span className=${'ph-cond'+(u.condition==='new'?' new':'')}>${u.condition_label}</span>
+                          ${u.battery_health != null && html`<span className="ph-bat">🔋 ${u.battery_health}%</span>`}
+                          ${u.battery_cycles != null && html`<span className="ph-cyc">${u.battery_cycles} sikl</span>`}
+                        </div>
+                        <div className="ph-imei">${u.imei_masked}</div>
+                        ${u.note && html`<div className="ph-note2">${u.note}</div>`}
+                      </div>
+                      <div className="ph-unit-r">
+                        <div className="ph-price">${money(u.cur_price ?? u.price, u.currency)}</div>
+                        <button className="ph-pick" onClick=${e=>onAddSerial(p, u, e.currentTarget)}>Tanlash</button>
+                      </div>
+                    </div>`)}
+                </div>`}
+          `}
+
+          <!-- ── Telefon (son bilan): spec+narx bucket, son tanlash ──── -->
+          ${phone && isGrouped && html`
+            <div className="detail-unit-label">Variant / narx</div>
+            <div className="ph-buckets">
+              ${phBuckets.map(b => html`
+                <button key=${b.key} className=${'ph-bucket'+(phBSel?.key===b.key?' active':'')}
+                  onClick=${()=>{setPhBKey(b.key); setQty(1)}}>
+                  <div className="ph-bucket-l">
+                    <div className="ph-bucket-spec">
+                      ${b.storage && html`<span className="ph-bspec">${b.storage}</span>`}
+                      ${b.color_label && html`<span className="ph-bspec">
+                        ${b.color_hex && html`<i className="ph-dot" style=${{background:b.color_hex}}></i>`}${b.color_label}
+                      </span>`}
+                      ${b.region && html`<span className="ph-bspec">${b.region}</span>`}
+                    </div>
+                    <div className="ph-bucket-cnt">${b.count} dona mavjud</div>
+                  </div>
+                  <div className="ph-bucket-price">${money(b.cur_price ?? b.price, b.currency)}</div>
+                </button>`)}
+            </div>
+            ${phBSel && html`
+              <div className="detail-controls">
+                <div className="detail-qty-wrap">
+                  <button className="detail-qty-btn" onClick=${()=>setQty(q=>Math.max(1,q-1))}>−</button>
+                  <span className="detail-qty-num">${qty}</span>
+                  <button className="detail-qty-btn" onClick=${()=>setQty(q=>Math.min(q+1, phBSel.count||1))}>+</button>
+                </div>
+                <button className="detail-add-btn" onClick=${e=>onAddBucket(p, phBSel, qty, e.currentTarget)}>
+                  Savatga qo'shish
+                </button>
+              </div>`}
+          `}
+
           <!-- Stock -->
           ${hasVariants && !out && selVariant?.stock != null && html`
             <div className="detail-stock ok">✓ Stokda: ${Math.floor(selVariant.stock)} ta</div>`}
           ${hasVariants && out && html`
             <div className="detail-stock out">❌ Stokda yo'q</div>`}
-          ${!hasVariants && p.stock_type === 'tracked' && html`
+          ${!hasVariants && !phone && p.stock_type === 'tracked' && html`
             <div className=${'detail-stock'+(out?' out':' ok')}>
               ${out ? '❌ Stokda yo\'q' : '✓ Stokda: '+fmtQty(maxQty)+' '+(unit?.unit_name||'dona')}
             </div>`}
@@ -1358,6 +1561,7 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
             </div>`}
 
           <!-- Qty + Add -->
+          ${!phone && html`
           <div className="detail-controls">
             ${isWeight
               ? html`<div className="detail-qty-wrap weight">
@@ -1376,7 +1580,7 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, cart }) {
                 ? html`<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Qo'shildi!`
                 : html`<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.55 13c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.37-.66-.11-1.48-.87-1.48H5.21l-.94-2H1v2h2l3.6 7.59-1.35 2.44C5.18 13.55 5 13.76 5 14c0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45zM7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg> ${out ? 'Stokda yo\'q' : 'Savatga qo\'shish'}`}
             </button>
-          </div>
+          </div>`}
 
           <!-- Description -->
           ${p.description && html`<p className="detail-desc">${p.description}</p>`}
@@ -1508,8 +1712,13 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
   const dispVal = hasVariants ? (p.variants[0]?.cur_price ?? displayPrice) : (unit?.cur_price ?? displayPrice)
   const dispOrigVal = hasVariants ? (p.variants[0]?.cur_original_price ?? null) : (unit?.cur_original_price ?? null)
 
+  // Telefon: karta = MODEL, narx eng arzon nusxadan. Savatga to'g'ridan-
+  // to'g'ri qo'shilmaydi — mijoz avval konfiguratsiya/nusxani tanlaydi.
+  const phone = p.phone && (p.phone.groups?.length || p.phone.buckets?.length) ? p.phone : null
+
   const handleAdd = (e) => {
     e.stopPropagation()
+    if (phone) { onDetail(p); return }
     if (out || added || hasVariants) return
     onAdd(p, unit, addBtnRef.current)
     setAdded(true)
@@ -1531,7 +1740,9 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
       <div className="product-name clamp2">${p.name}</div>
 
       <!-- Meta: stock info -->
-      ${!hasVariants && p.stock_type === 'tracked' && !out && html`
+      ${phone && !out && html`
+        <div className="product-meta">${p.stock} ta mavjud</div>`}
+      ${!phone && !hasVariants && p.stock_type === 'tracked' && !out && html`
         <div className="product-meta">${maxQty} ${unit?.unit_name||'dona'} mavjud</div>`}
       ${out && html`<div className="product-meta" style=${{color:'#e53e3e'}}>Sotib bo'lindi</div>`}
       ${hasVariants && !out && html`
@@ -1539,13 +1750,15 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
 
       <!-- Price -->
       <div className="product-price">
-        ${dispOrigVal != null && html`<span className="price-orig-strike">${hasVariants ? 'dan '+money(dispOrigVal, dispCur) : money(dispOrigVal, dispCur)}</span>`}
-        ${hasVariants ? 'dan '+money(dispVal, dispCur) : money(dispVal, dispCur)}
+        ${!phone && dispOrigVal != null && html`<span className="price-orig-strike">${hasVariants ? 'dan '+money(dispOrigVal, dispCur) : money(dispOrigVal, dispCur)}</span>`}
+        ${phone
+          ? money(phone.from_cur_price ?? phone.from_price, phone.currency ?? '') + ' dan'
+          : (hasVariants ? 'dan '+money(dispVal, dispCur) : money(dispVal, dispCur))}
         ${p.discount_percent > 0 && html`<span className="disc-badge">−${Math.round(p.discount_percent)}%</span>`}
       </div>
 
       <!-- Unit selector (non-variant only) -->
-      ${!hasVariants && p.units?.length > 1 && html`
+      ${!phone && !hasVariants && p.units?.length > 1 && html`
         <div className="unit-row" onClick=${e=>e.stopPropagation()}>
           <span className="unit-label">Birlik:</span>
           <div className="unit-select-wrap">
@@ -1629,6 +1842,8 @@ function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) 
                   </div>
                   <div className="cart-info-new">
                     <div className="cart-name-new clamp2">${it.name}${it.variant_name ? ' · '+it.variant_name : ''}</div>
+                    ${it.imei && html`<div className="cart-item-imei">${it.imei}</div>`}
+                    ${it.spec_label && html`<div className="cart-item-imei">${it.spec_label}</div>`}
                     <div className="cart-price-new">${it.currency==='USD' && it.cur_price!=null ? money(it.cur_price*it.qty, it.currency) : som(it.price*it.qty)}</div>
                     <div className="cart-unit-new">${it.currency==='USD' && it.cur_price!=null ? money(it.cur_price, it.currency) : som(it.price)} × ${fmtQty(it.qty)} ${it.unit_name}</div>
                   </div>
@@ -2313,6 +2528,49 @@ function App() {
     _orbBounce(fromEl)
   }
 
+  // Telefon nusxasi (IMEI) — har nusxa BITTA dona va o'z qatori.
+  // Bir xil modelning turli IMEI'lari birlashib ketmasligi uchun kalitga
+  // nusxa id'si kiradi.
+  function addSerialToCart(p, unit, fromEl) {
+    const key = `${p.id}_s${unit.id}`
+    setCart(c => {
+      if (c.find(x => x.key === key)) return c    // bitta telefon — bitta dona
+      return [...c, {
+        key, product_id: p.id, serial_id: unit.id,
+        unit_id: null, variant_id: null, variant_name: '',
+        unit_name: 'dona', name: p.name,
+        imei: unit.imei_masked,
+        price: unit.price, currency: unit.currency || '', cur_price: unit.cur_price,
+        qty: 1, maxQty: 1, image: p.image,
+      }]
+    })
+    _orbBounce(fromEl)
+  }
+
+  // Telefon "son bilan" (grouped) — spec+narx bucketdan N dona. IMEI'siz:
+  // buyurtma tushganda tizim o'sha bucketdan aynan N nusxani band qiladi.
+  function addBucketToCart(p, b, qty, fromEl) {
+    const key = `${p.id}_b${b.key}`
+    const max = b.count || 1
+    const add = Math.min(qty, max)
+    if (add <= 0) return
+    const specLabel = [b.storage, b.color_label, b.region].filter(Boolean).join(' · ')
+    setCart(c => {
+      const ex = c.find(x => x.key === key)
+      if (ex) { if (ex.qty >= max) return c; return c.map(x => x.key===key ? {...x, qty: Math.min(x.qty+add, max)} : x) }
+      return [...c, {
+        key, product_id: p.id,
+        base_price: b.base_price, currency: b.currency || '',
+        storage: b.storage || '', color: b.color || '', region: b.region || '',
+        unit_id: null, variant_id: null, serial_id: null, variant_name: '',
+        unit_name: 'dona', name: p.name, spec_label: specLabel,
+        price: b.price, cur_price: b.cur_price,
+        qty: add, maxQty: max, image: p.image,
+      }]
+    })
+    _orbBounce(fromEl)
+  }
+
   function addVariantToCart(p, variant, qty, fromEl) {
     const key = `${p.id}_v${variant.id}`
     const max = variant.stock != null ? Math.floor(variant.stock) : Infinity
@@ -2338,6 +2596,12 @@ function App() {
           product_id: it.product_id,
           ...(it.variant_id ? {variant_id: it.variant_id} : {}),
           ...(it.unit_id    ? {unit_id:    it.unit_id}    : {}),
+          ...(it.serial_id  ? {serial_id:  it.serial_id}  : {}),
+          // Telefon "son bilan" (grouped): IMEI'siz — bucket kimligi (spec+narx)
+          ...(it.base_price != null ? {
+            base_price: it.base_price, currency: it.currency || '',
+            storage: it.storage || '', color: it.color || '', region: it.region || '',
+          } : {}),
           qty: it.qty,
         }))
       }
@@ -2515,6 +2779,8 @@ function App() {
       onClose=${()=>setDetail(null)}
       onAdd=${addToCart}
       onAddVariant=${addVariantToCart}
+      onAddSerial=${addSerialToCart}
+      onAddBucket=${addBucketToCart}
       cart=${cart}/>`}
 
     <!-- ── Category Drawer ───────────────────── -->
