@@ -162,10 +162,10 @@
 
     .cat-bar {
       position: sticky; top: 72px; z-index: 99;
-      animation: slideDown 0.4s ease-out;
       transition: background-color 0.22s cubic-bezier(0.22, 0.61, 0.36, 1),
                   box-shadow 0.22s cubic-bezier(0.22, 0.61, 0.36, 1),
-                  border-color 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+                  border-color 0.22s cubic-bezier(0.22, 0.61, 0.36, 1),
+                  margin-bottom 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
     }
     .cat-bar-stuck {
       background: rgba(250,247,242,0.95);
@@ -173,6 +173,8 @@
       -webkit-backdrop-filter: blur(16px);
       box-shadow: 0 2px 12px rgba(43,38,32,0.05);
       border-bottom: 1px solid var(--line-soft);
+      /* Offsets the compact row height so content below keeps its position. */
+      margin-bottom: 34px;
     }
     .cat-bar-inner {
       max-width: 1400px; margin: 0 auto; padding: 14px 28px;
@@ -392,11 +394,14 @@
     .qty-btn:hover { background: var(--sage-tint); color: var(--sage-deep); }
     .qty-btn:active { background: var(--sage-tint); transform: scale(.88); }
     .qty-num {
-      width: 32px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink);
-      border: none;
-      line-height: 38px;
+      width: 48px; height: 38px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink);
+      border: none; background: transparent; outline: none;
       transition: transform .15s ease, color .15s ease;
+      -moz-appearance: textfield;
     }
+    .qty-num::-webkit-outer-spin-button,
+    .qty-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .qty-num:focus { background: var(--sage-tint); color: var(--sage-deep); }
     .qty-wrap:has(.qty-btn:active) .qty-num { animation: qtyPop .22s ease; }
     @keyframes qtyPop {
       0% { transform: scale(1); }
@@ -632,8 +637,6 @@
       .cat-bar-inner{ padding: 10px 16px; gap: 12px; }
       .cat-chip { height: 58px; padding: 10px 18px 10px 8px; font-size: 13px; gap: 10px; }
       .cat-chip-thumb { width: 44px; height: 44px; }
-      .cat-bar-stuck .cat-chip { height: 40px; padding: 6px 14px 6px 6px; font-size: 12px; gap: 6px; }
-      .cat-bar-stuck .cat-chip-thumb { width: 26px; height: 26px; }
       .cat-chip-sub { height: 32px; padding: 0 14px; font-size: 12px; }
       .product-name { font-size: 13px; }
       .product-price{ font-size: 15px; }
@@ -840,6 +843,11 @@
     }
     .cat-bar-stuck .cat-chip-thumb {
       width: 28px; height: 28px; border-radius: 8px;
+    }
+    @media (max-width: 640px) {
+      .cat-bar-stuck { margin-bottom: 26px; }
+      .cat-bar-stuck .cat-chip { height: 40px; padding: 6px 14px 6px 6px; font-size: 12px; gap: 6px; }
+      .cat-bar-stuck .cat-chip-thumb { width: 26px; height: 26px; }
     }
     .cat-chip:hover .cat-chip-thumb {
       transform: scale(1.06);
@@ -1128,7 +1136,14 @@
     .cart-qty-input::-webkit-outer-spin-button,
     .cart-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .cqu { font-size: 11px; font-weight: 600; color: var(--sage-deep); }
-    .cqn { width: 28px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink); }
+    .cqn {
+      width: 42px; height: 32px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink);
+      border: 1px solid var(--line); border-radius: 10px; background: var(--bg-card); outline: none;
+      -moz-appearance: textfield;
+    }
+    .cqn:focus { border-color: var(--sage); box-shadow: 0 0 0 3px var(--sage-tint); }
+    .cqn::-webkit-outer-spin-button,
+    .cqn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .cart-divider { height: 1px; background: var(--line-soft); margin: 0 22px; }
     .cart-footer-new { padding: 18px 22px 32px; background: var(--bg); border-top: 1px solid var(--line-soft); }
     .cart-total-card {
@@ -1140,7 +1155,7 @@
     .cart-total-lbl { font-size: 13px; color: var(--sage-deep); font-weight: 600; letter-spacing: -0.01em; }
     .cart-total-val {
       font-family: 'Montserrat', -apple-system, sans-serif;
-      font-size: 24px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em;
+      font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em;
     }
     .cart-checkout-btn {
       width: 100%; height: 54px; border-radius: var(--radius-sm); border: none;
@@ -1550,6 +1565,42 @@ function BottomNav({ active, count, cartIconRef, onHome, onSearch, onCart, onDra
     </nav>`
 }
 
+// ── QuantityInput ───────────────────────────────────────────────────────
+// Keeps the text being typed locally, then applies a valid whole-number
+// quantity on blur or Enter. This lets a customer replace "1" with "10"
+// without the item disappearing while the field is temporarily empty.
+function QuantityInput({ value, max=Infinity, className, onCommit, allowDecimal=false }) {
+  const [draft, setDraft] = useState(String(fmtQty(value)))
+
+  useEffect(() => { setDraft(String(fmtQty(value))) }, [value])
+
+  const commit = () => {
+    const raw = draft.trim()
+    if (raw === '') { setDraft(String(fmtQty(value))); return }
+    const parsed = Number(raw)
+    if (!Number.isFinite(parsed)) { setDraft(String(fmtQty(value))); return }
+    const min = allowDecimal ? 0.001 : 1
+    const normalized = allowDecimal ? Math.round(parsed * 1000) / 1000 : Math.floor(parsed)
+    const next = Math.min(Math.max(min, normalized), max)
+    setDraft(String(fmtQty(next)))
+    if (next !== value) onCommit(next)
+  }
+
+  return html`<input
+    className=${className}
+    type="number"
+    inputMode=${allowDecimal ? 'decimal' : 'numeric'}
+    min=${allowDecimal ? '0.001' : '1'}
+    max=${Number.isFinite(max) ? max : undefined}
+    step=${allowDecimal ? '0.001' : '1'}
+    aria-label="Miqdor"
+    value=${draft}
+    onChange=${e => setDraft(e.target.value)}
+    onClick=${e => e.stopPropagation()}
+    onKeyDown=${e => { e.stopPropagation(); if (e.key === 'Enter') e.currentTarget.blur() }}
+    onBlur=${commit}/>`
+}
+
 // ── ProductItem ────────────────────────────────────────────────────────
 function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
   const hasVariants = !!(p.has_variants && p.variants?.length)
@@ -1563,9 +1614,10 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
 
   const unit   = !hasVariants ? (p.units?.find(u => u.unit_id === unitId) || p.units?.[0]) : null
   const mult   = unit?.multiplier || 1
+  const isWeight = isWeightUnit(unit?.unit_name)
   const maxQty = hasVariants
     ? (p.in_stock ? 1 : 0)
-    : (p.stock_type === 'tracked' ? Math.floor(p.stock / mult) : Infinity)
+    : (p.stock_type === 'tracked' ? (isWeight ? p.stock / mult : Math.floor(p.stock / mult)) : Infinity)
   const cartKey = p.id+'_'+(unit?.unit_id??'base')
   const inCart = !hasVariants ? (cart.find(x => x.key === cartKey)?.qty || 0) : 0
   const out    = hasVariants ? !p.in_stock : maxQty <= 0
@@ -1641,7 +1693,8 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
             ? html`
               <div className="qty-wrap">
                 <button className="qty-btn" onClick=${e=>{e.stopPropagation();setQty(cartKey, inCart-1)}}>−</button>
-                <span className="qty-num">${fmtQty(inCart)}</span>
+                <${QuantityInput} className="qty-num" value=${inCart} max=${maxQty} allowDecimal=${isWeight}
+                  onCommit=${qty=>setQty(cartKey, qty)}/>
                 <button className="qty-btn" onClick=${e=>{e.stopPropagation(); if(maxQty===Infinity||inCart<maxQty) onAdd(p, unit, addBtnRef.current)}}>+</button>
               </div>`
             // Savatda yo'q — bitta "Savatga" tugmasi
@@ -1718,7 +1771,8 @@ function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) 
                           onClick=${()=>it.qty===1?remove(it.key):setQty(it.key,it.qty-1)}>
                           ${it.qty===1?html`<${IX} s=${12}/>`:html`−`}
                         </button>
-                        <span className="cqn">${it.qty}</span>
+                        <${QuantityInput} className="cqn" value=${it.qty} max=${it.maxQty}
+                          onCommit=${qty=>setQty(it.key,qty)}/>
                         <button className="cqb" onClick=${()=>setQty(it.key,it.qty+1)}>+</button>
                       </div>`}
                 </div>
@@ -2637,7 +2691,7 @@ function App() {
 
 // Mobile search button — hide on desktop, show on mobile
 const style = document.createElement('style')
-style.textContent = '.mobile-search-trigger{display:none!important}@media(max-width:640px){.mobile-search-trigger{display:flex!important}.header-search{display:none!important}}'
+style.textContent = '.mobile-search-trigger{display:none!important}@media(max-width:640px){.mobile-search-trigger{display:flex!important}.header-search:not(.fade-in){display:none!important}.header-search.fade-in{display:flex!important}}'
 document.head.appendChild(style)
 
 createRoot(document.getElementById('root')).render(html`<${App}/>`)
