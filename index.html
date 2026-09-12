@@ -2,16 +2,17 @@
 <html lang="uz">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
-  <title>Do'kon</title>
-  <link rel="icon" href="data:,">
-  <!-- Xarita (yetkazish joyini belgilash) — OpenStreetMap, kalitsiz -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>document.write('<script src="./config.js?_='+Date.now()+'"><\/script>')</script>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Dukonline — Onlayn do'kon</title>
+  <meta name="description" content="Dukonline — mahsulotlarni qulay tanlash va onlayn buyurtma berish uchun internet-do‘kon."/>
+  <meta name="theme-color" content="#faf7f2"/>
+  <meta property="og:title" content="Dukonline — Onlayn do'kon"/>
+  <meta property="og:description" content="Mahsulotlarni qulay tanlang va onlayn buyurtma bering."/>
+  <meta property="og:type" content="website"/>
+  <meta name="twitter:card" content="summary"/>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%237a8b6f'/%3E%3Cpath d='M18 16h15c10 0 17 6 17 16S43 48 33 48H18V16zm10 9v14h5c5 0 8-2 8-7s-3-7-8-7h-5z' fill='white'/%3E%3C/svg%3E">
+  <link href="./vendor/montserrat.css" rel="stylesheet">
+  <script src="./config.js?v=20260912"></script>
   <style>
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,6 +30,11 @@
     input, select, button, textarea { font-family: inherit; }
     input:focus, select:focus { outline: none; }
     button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 3px solid var(--sage); outline-offset: 3px; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
 
     /* ── Design tokens (soft, Tilda-like warm minimalism) ─── */
     :root {
@@ -75,6 +81,9 @@
     .fade-in  { animation: fadeIn  .25s ease both; }
     .pop-in   { animation: popIn   .3s cubic-bezier(.34,1.4,.64,1) both; }
     .slide-up { animation: slideUp .36s cubic-bezier(.32,.72,0,1) both; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
 
     /* ── Header ──────────────────────────── */
     .site-header {
@@ -162,10 +171,10 @@
 
     .cat-bar {
       position: sticky; top: 72px; z-index: 99;
-      animation: slideDown 0.4s ease-out;
       transition: background-color 0.22s cubic-bezier(0.22, 0.61, 0.36, 1),
                   box-shadow 0.22s cubic-bezier(0.22, 0.61, 0.36, 1),
-                  border-color 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+                  border-color 0.22s cubic-bezier(0.22, 0.61, 0.36, 1),
+                  margin-bottom 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
     }
     .cat-bar-stuck {
       background: rgba(250,247,242,0.95);
@@ -173,10 +182,12 @@
       -webkit-backdrop-filter: blur(16px);
       box-shadow: 0 2px 12px rgba(43,38,32,0.05);
       border-bottom: 1px solid var(--line-soft);
+      /* Offsets the compact row height so content below keeps its position. */
+      margin-bottom: 34px;
     }
     .cat-bar-inner {
       max-width: 1400px; margin: 0 auto; padding: 14px 28px;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
+      display: flex; align-items: center; justify-content: safe center; gap: 10px;
       overflow-x: auto; scrollbar-width: none;
       height: auto;
       transition: padding 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -255,20 +266,29 @@
     /* ── Top tovarlar (tavsiya karusel) ──── */
     .top-rail-wrap { margin: 4px 0 32px; }
     .top-rail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-    .top-rail-head h2 { font-size: 20px; font-weight: 800; color: #111; margin: 0; }
-    .top-rail-badge { font-size: 12px; font-weight: 700; color: #e8590c; background: #fff4e6; padding: 3px 11px; border-radius: 20px; white-space: nowrap; }
-    .top-rail { display: flex; gap: 24px; overflow-x: auto; padding: 4px 2px 12px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+    .top-rail-head h2 { font-size: 20px; font-weight: 800; color: var(--ink); margin: 0; letter-spacing: -0.01em; }
+    .top-rail-badge { font-size: 12px; font-weight: 700; color: var(--sage-deep); background: var(--sage-tint); padding: 3px 11px; border-radius: 20px; white-space: nowrap; }
+    .top-rail { display: flex; gap: 24px; overflow-x: auto; padding: 4px 2px 12px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; align-items: stretch; }
     .top-rail::-webkit-scrollbar { height: 6px; }
     .top-rail::-webkit-scrollbar-track { background: transparent; }
-    .top-rail::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 3px; }
-    .top-rail-item { flex: 0 0 auto; width: 210px; scroll-snap-align: start; }
+    .top-rail::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+    .top-rail-item { position: relative; flex: 0 0 auto; width: 210px; scroll-snap-align: start; display: flex; }
+    .top-rail-item > .product-item { flex: 1; min-width: 0; }
+    .top-rail-rank {
+      position: absolute; top: 10px; left: 10px; z-index: 2;
+      display: flex; align-items: center; gap: 4px;
+      background: var(--sage-deep); color: #fff;
+      font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+      padding: 4px 8px 4px 6px; border-radius: 6px;
+      font-family: 'Montserrat', sans-serif;
+      pointer-events: none;
+    }
     @media (max-width: 860px) { .top-rail { gap: 16px; } .top-rail-item { width: 170px; } }
     @media (max-width: 480px) { .top-rail-item { width: 150px; } .top-rail-head h2 { font-size: 18px; } }
 
     /* ── Product Item ─────────────────────── */
     .product-item {
       display: flex; flex-direction: column; gap: 0;
-      cursor: pointer;
       transition: transform .3s cubic-bezier(.16,1,.3,1);
     }
     .product-item:hover { transform: translateY(-3px); }
@@ -281,20 +301,36 @@
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 14px;
       transition: background .25s, box-shadow .25s;
-      cursor: zoom-in;
+      cursor: pointer;
     }
     .product-item:hover .product-img-wrap {
       background: var(--bg-soft);
       box-shadow: var(--shadow-card);
     }
     .product-img-wrap img {
-      width: 90%; height: 90%;
-      object-fit: contain;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center;
+      padding: 0;
+      background: inherit;
       display: block;
-      border-radius: var(--radius);
+      border-radius: inherit;
       transition: transform .5s cubic-bezier(.16,1,.3,1);
     }
     .product-item:hover .product-img-wrap img { transform: scale(1.06); }
+    .product-title-btn {
+      width: 100%; border: 0; padding: 0; background: transparent; color: inherit;
+      text-align: left; cursor: pointer;
+    }
+    .product-image-open {
+      position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+      border: 0; border-radius: inherit; background: transparent;
+    }
+    .product-image-open:focus-visible { outline-offset: -4px; }
+    .image-fallback {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      color: var(--ink-faint); background: inherit; border-radius: inherit;
+    }
     .product-no-img {
       width: 56px; height: 56px; opacity: .2;
     }
@@ -303,6 +339,7 @@
       background: rgba(250,247,242,0.78);
       backdrop-filter: blur(2px);
       display: flex; align-items: center; justify-content: center;
+      pointer-events: none; z-index: 2;
     }
     .stock-out-tag {
       background: var(--bg-card); color: var(--ink-soft);
@@ -313,7 +350,7 @@
       box-shadow: var(--shadow-soft);
     }
     .in-cart-dot {
-      position: absolute; top: 12px; right: 12px;
+      position: absolute; top: 12px; right: 12px; z-index: 3;
       background: var(--sage); color: #fff;
       font-size: 11px; font-weight: 700;
       min-width: 22px; height: 22px; border-radius: 11px;
@@ -383,11 +420,14 @@
     .qty-btn:hover { background: var(--sage-tint); color: var(--sage-deep); }
     .qty-btn:active { background: var(--sage-tint); transform: scale(.88); }
     .qty-num {
-      width: 32px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink);
-      border: none;
-      line-height: 38px;
+      width: 48px; height: 38px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink);
+      border: none; background: transparent; outline: none;
       transition: transform .15s ease, color .15s ease;
+      -moz-appearance: textfield;
     }
+    .qty-num::-webkit-outer-spin-button,
+    .qty-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .qty-num:focus { background: var(--sage-tint); color: var(--sage-deep); }
     .qty-wrap:has(.qty-btn:active) .qty-num { animation: qtyPop .22s ease; }
     @keyframes qtyPop {
       0% { transform: scale(1); }
@@ -435,6 +475,16 @@
     }
     .state-emoji { font-size: 44px; margin-bottom: 16px; }
     .state-text  { font-size: 15px; color: var(--ink-soft); font-weight: 400; }
+    .state-retry {
+      margin-top: 18px; min-height: 42px; padding: 0 20px; border-radius: var(--radius-sm);
+      border: 1px solid var(--line); background: var(--bg-card); color: var(--ink);
+      font-size: 13px; font-weight: 600;
+    }
+    .state-retry:hover { border-color: var(--sage); color: var(--sage-deep); background: var(--sage-tint); }
+    .fallback-label {
+      font-size: 12px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase;
+      letter-spacing: .06em; text-align: center; margin: 0 0 24px;
+    }
 
     /* ── Overlay / Sheet ─────────────────── */
     .overlay-bg {
@@ -619,8 +669,6 @@
       .cat-bar-inner{ padding: 10px 16px; gap: 12px; }
       .cat-chip { height: 58px; padding: 10px 18px 10px 8px; font-size: 13px; gap: 10px; }
       .cat-chip-thumb { width: 44px; height: 44px; }
-      .cat-bar-stuck .cat-chip { height: 40px; padding: 6px 14px 6px 6px; font-size: 12px; gap: 6px; }
-      .cat-bar-stuck .cat-chip-thumb { width: 26px; height: 26px; }
       .cat-chip-sub { height: 32px; padding: 0 14px; font-size: 12px; }
       .product-name { font-size: 13px; }
       .product-price{ font-size: 15px; }
@@ -636,32 +684,32 @@
 
     /* ── Bottom Nav ──────────────────────────── */
     .bottom-nav {
-      position: fixed; bottom: 18px; left: 50%;
+      position: fixed; bottom: 22px; left: 50%;
       transform: translateX(-50%);
-      width: 75%; max-width: 380px;
-      background: rgba(255,255,255,0.85);
+      width: min(calc(100% - 32px), 380px);
+      background: rgba(255,255,255,0.92);
       backdrop-filter: blur(24px) saturate(180%);
       -webkit-backdrop-filter: blur(24px) saturate(180%);
       border: 1px solid var(--line-soft);
       border-radius: var(--radius-pill);
       display: flex; justify-content: space-between; align-items: center;
-      padding: 8px 16px;
+      padding: 10px 18px;
       z-index: 9000; gap: 4px;
       box-shadow: 0 8px 32px rgba(43,38,32,0.12), 0 2px 8px rgba(43,38,32,0.06);
     }
     .nav-btn {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      flex: 1; border: none; background: transparent; padding: 6px 0;
+      flex: 1; border: none; background: transparent; padding: 7px 0 5px;
       border-radius: 20px; cursor: pointer; color: var(--ink-faint);
       transition: all .25s ease; -webkit-tap-highlight-color: transparent;
     }
     .nav-icon-wrap {
       position: relative; display: flex; align-items: center; justify-content: center;
-      width: 44px; height: 30px; border-radius: 14px; transition: .3s ease;
+      width: 52px; height: 34px; border-radius: 17px; transition: .3s ease;
     }
-    .nav-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; transition: .3s ease; }
+    .nav-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; transition: .3s ease; }
     .nav-label {
-      font-size: 9.5px; font-weight: 600; margin-top: 3px; color: currentColor;
+      font-size: 11px; font-weight: 650; margin-top: 4px; color: currentColor;
       letter-spacing: .02em; transition: transform .25s ease;
     }
     .nav-btn.nav-active { color: var(--sage-deep); }
@@ -828,19 +876,29 @@
     .cat-bar-stuck .cat-chip-thumb {
       width: 28px; height: 28px; border-radius: 8px;
     }
+    @media (max-width: 640px) {
+      .cat-bar-stuck { margin-bottom: 26px; }
+      .cat-bar-stuck .cat-chip { height: 40px; padding: 6px 14px 6px 6px; font-size: 12px; gap: 6px; }
+      .cat-bar-stuck .cat-chip-thumb { width: 26px; height: 26px; }
+    }
     .cat-chip:hover .cat-chip-thumb {
       transform: scale(1.06);
     }
 
     /* ── Sub-kategoriyasi bor chip'lardagi strelka ── */
+    .cat-chip-group { position: relative; flex-shrink: 0; }
+    .cat-chip-group .cat-chip { max-width: none; }
+    .cat-chip.has-sub { padding-right: 44px; }
     .cat-chip-arrow {
+      position: absolute; right: 8px; top: 50%; width: 28px; height: 28px;
       display: inline-flex; align-items: center; justify-content: center;
-      color: var(--ink-faint); flex-shrink: 0; margin-left: -4px; padding: 4px; border-radius: 50%;
+      color: var(--ink-faint); border: 0; background: transparent; border-radius: 50%;
+      transform: translateY(-50%);
       transition: color 0.3s ease, background-color 0.2s ease, transform 0.2s ease;
     }
-    .cat-chip:hover .cat-chip-arrow, .cat-chip.active .cat-chip-arrow { color: var(--ink-soft); }
+    .cat-chip-group:hover .cat-chip-arrow, .cat-chip.active + .cat-chip-arrow { color: var(--ink-soft); }
     .cat-chip-arrow:hover { background: rgba(43,38,32,0.06); }
-    .cat-chip-arrow.open { transform: rotate(180deg); color: var(--ink); }
+    .cat-chip-arrow.open { transform: translateY(-50%) rotate(180deg); color: var(--ink); }
 
     /* ── Sub-kategoriya dropdown (chip strelkasi bosilganda) ── */
     .cat-subdrop-overlay { position: fixed; inset: 0; z-index: 150; }
@@ -862,10 +920,10 @@
 
     /* ── Banner karusel ── */
     /* Mahsulotlar bloki bilan bir xil kenglikda (page-body bilan mos) */
-    .banner-wrap { max-width: 1400px; margin: 16px auto 32px; padding: 0 28px; }
+    .banner-wrap { max-width: 1300px; margin: 16px auto 110px; padding: 0 28px; }
     .banner-viewport { position: relative; overflow: hidden; border-radius: 20px; box-shadow: var(--shadow-card); }
     .banner-track { display: flex; transition: transform .6s cubic-bezier(.4,0,.2,1); }
-    .banner-slide { position: relative; min-width: 100%; aspect-ratio: 2 / 1; background: var(--bg-soft); }
+    .banner-slide { position: relative; min-width: 100%; aspect-ratio: 2.4 / 1; background: var(--bg-soft); }
     .banner-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .banner-title {
       position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 32px;
@@ -874,6 +932,7 @@
       font-size: 24px; font-weight: 700; letter-spacing: -0.02em;
       line-height: 1.2;
     }
+    .banner-title.right { left: auto; right: 0; width: min(100%, 720px); text-align: right; }
     .banner-dots { position: absolute; bottom: 18px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; z-index: 2; }
     .banner-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.55); cursor: pointer; transition: all .25s; border: none; padding: 0; }
     .banner-dot.active { background: #fff; width: 24px; border-radius: 4px; }
@@ -897,15 +956,20 @@
       .banner-arrow.prev { left: 12px; }
       .banner-arrow.next { right: 12px; }
     }
-    @media (max-width: 480px) { .bottom-nav { width: 72%; } }
+    @media (max-width: 480px) {
+      .bottom-nav { bottom: 14px; width: calc(100% - 24px); padding: 8px 10px; }
+      .nav-icon-wrap { width: 48px; height: 32px; }
+      .nav-label { font-size: 10px; }
+    }
 
     /* ── Product Detail Overlay ──────────────── */
     .detail-overlay {
-      position: fixed; inset: 0; z-index: 8000;
+      position: fixed; inset: 0; z-index: 9300;
       background: var(--bg);
       display: flex; flex-direction: column;
       animation: fadeIn .25s ease;
-      overflow-y: auto;
+      overflow-y: auto; overflow-x: hidden;
+      width: 100%; max-width: 100vw;
     }
     .detail-topbar {
       display: flex; align-items: center; justify-content: space-between;
@@ -930,22 +994,107 @@
     .detail-close-btn:hover { background: var(--sage-tint); color: var(--sage-deep); border-color: var(--sage-tint); }
     .detail-body {
       display: flex; justify-content: center; align-items: center;
-      background: var(--bg); padding: 32px 28px 0; gap: 40px;
+      width: 100%; max-width: 1180px; margin: 0 auto;
+      background: var(--bg); padding: clamp(28px, 4vw, 56px) 28px 0;
+      gap: clamp(36px, 5vw, 72px);
     }
     @media (max-width: 640px) {
-      .detail-body { flex-direction: column; gap: 20px; padding: 20px 18px 0; }
+      .detail-body { flex-direction: column; gap: 22px; padding: 20px 18px 0; }
     }
     .detail-img-side {
       display: flex; align-items: center; justify-content: center;
-      width: 38%; margin: 0; aspect-ratio: 1 / 1; border-radius: 20px;
-      overflow: hidden;
+      flex: 0 1 440px; width: min(40vw, 440px); max-width: 440px;
+      margin: 0; aspect-ratio: 3 / 4; border-radius: 22px;
+      overflow: hidden; background: var(--bg-muted);
+      box-shadow: var(--shadow-card);
     }
     @media (max-width: 640px) {
-      .detail-img-side { width: 100%; border-radius: 16px; }
+      .detail-img-side {
+        flex-basis: auto; width: min(100%, 420px); max-width: 420px;
+        aspect-ratio: 4 / 5; border-radius: 18px;
+      }
     }
-    .detail-img-side img { width: 78%; height: 78%; object-fit: contain; border-radius: 16px; display: block; }
-    .detail-info-side { padding: 40px 36px; display: flex; flex-direction: column; gap: 0; width: 44%;}
-    @media (max-width: 640px) { .detail-info-side { padding: 24px 22px; width: 100%; } }
+    .detail-img-side img {
+      width: 100%; height: 100%; padding: 0;
+      object-fit: cover; object-position: center;
+      background: inherit; border-radius: inherit; display: block;
+    }
+
+    /* ── Product image lightbox ─────────────── */
+    .detail-img-side.zoomable { position: relative; cursor: zoom-in; }
+    .detail-img-side.zoomable img { pointer-events: none; transition: transform .25s ease; }
+    .detail-img-side.zoomable:hover img { transform: scale(1.04); }
+    .img-zoom-hint {
+      position: absolute; bottom: 12px; right: 12px; z-index: 3;
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 12px; border-radius: var(--radius-pill);
+      background: rgba(43,38,32,0.72); color: #fff;
+      font-size: 11px; font-weight: 600; letter-spacing: .01em;
+      opacity: 0; transform: translateY(4px);
+      transition: all .2s ease; pointer-events: none;
+      backdrop-filter: blur(4px);
+    }
+    .detail-img-side.zoomable:hover .img-zoom-hint { opacity: 1; transform: translateY(0); }
+    .card-zoom-btn {
+      position: absolute; bottom: 10px; right: 10px; z-index: 3;
+      width: 34px; height: 34px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--line); background: rgba(250,247,242,0.92);
+      color: var(--ink-soft); cursor: zoom-in;
+      opacity: 0; transform: translateY(-3px);
+      transition: all .2s ease; backdrop-filter: blur(4px);
+    }
+    .product-item:hover .card-zoom-btn, .card-zoom-btn:focus-visible { opacity: 1; transform: translateY(0); }
+    .card-zoom-btn:hover { background: var(--sage); border-color: var(--sage); color: #fff; }
+    @media (hover: none) {
+      .img-zoom-hint { opacity: .85; transform: none; }
+      .card-zoom-btn { opacity: .9; transform: none; }
+    }
+    .lb-overlay {
+      position: fixed; inset: 0; z-index: 9600;
+      background: rgba(24,18,15,0.94); backdrop-filter: blur(8px);
+      display: flex; flex-direction: column; animation: lbIn .18s ease;
+    }
+    @keyframes lbIn { from { opacity: 0 } to { opacity: 1 } }
+    .lb-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; color: rgba(255,255,255,.85); }
+    .lb-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+    .lb-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .lb-btn {
+      width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.08); color: #fff;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .lb-btn:hover { background: rgba(255,255,255,.2); }
+    .lb-btn:disabled { opacity: .35; cursor: default; }
+    .lb-zoom-label { min-width: 48px; text-align: center; border: none; background: none; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.8); }
+    .lb-stage { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; min-height: 0; cursor: zoom-in; }
+    .lb-stage.zoomed { cursor: grab; }
+    .lb-stage.dragging { cursor: grabbing; }
+    .lb-stage img {
+      max-width: min(92vw, 1100px); max-height: calc(100vh - 150px);
+      object-fit: contain; user-select: none; -webkit-user-drag: none;
+      transform-origin: center center; border-radius: 8px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.55); transition: transform .16s ease;
+    }
+    .lb-stage img.no-anim { transition: none; }
+    .lb-bottom { text-align: center; padding: 10px 16px 18px; font-size: 11.5px; color: rgba(255,255,255,.5); }
+    @media (max-width: 640px) {
+      .lb-top { padding: 10px 12px; }
+      .lb-btn { width: 36px; height: 36px; }
+      .lb-title { max-width: 38vw; font-size: 12px; }
+      .lb-bottom { font-size: 10.5px; padding-bottom: 14px; }
+      .lb-stage img { max-width: 96vw; max-height: calc(100vh - 130px); }
+    }
+    .detail-info-side {
+      flex: 1 1 460px; width: auto; max-width: 560px; min-width: 0;
+      padding: 32px 0; display: flex; flex-direction: column; gap: 0;
+    }
+    @media (max-width: 640px) {
+      .detail-info-side {
+        flex-basis: auto; padding: 2px 4px calc(28px + env(safe-area-inset-bottom));
+        width: 100%; max-width: 520px;
+      }
+    }
     .detail-cat { font-size: 11px; font-weight: 600; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
     .detail-name {
       font-family: 'Montserrat', -apple-system, sans-serif;
@@ -966,74 +1115,6 @@
       letter-spacing: -0.01em;
     }
     .detail-unit-chip.active { border-color: var(--sage); background: var(--sage-tint); color: var(--sage-deep); font-weight: 600; }
-
-    /* ── Telefon (IMEI) tovari ─────────────────────────────────────── */
-    .ph-from { font-size: 0.62em; font-weight: 500; opacity: .6; margin-left: 4px; }
-    .detail-unit-chip.ph-color { display: inline-flex; align-items: center; gap: 6px; }
-    .ph-dot {
-      width: 11px; height: 11px; border-radius: 50%;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); flex-shrink: 0;
-    }
-    .ph-dot.lg { width: 16px; height: 16px; }
-    .ph-real-color {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      margin: 14px 0 4px; padding: 9px 12px; border-radius: 10px;
-      background: var(--sage-tint); font-size: 13px; color: var(--ink);
-    }
-    .ph-note { font-size: 11px; opacity: .55; }
-    .ph-unit-meta { font-size: 12.5px; color: #64748b; margin-top: 6px; }
-
-    .ph-units { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-    .ph-unit {
-      display: flex; align-items: center; gap: 12px;
-      border: 1px solid #e6e6e6; border-radius: 12px; padding: 11px 13px;
-      transition: border-color .15s;
-    }
-    .ph-unit:hover { border-color: var(--sage); }
-    .ph-unit-l { flex: 1; min-width: 0; }
-    .ph-unit-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-    .ph-cond {
-      font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px;
-      background: #fef3c7; color: #92400e;
-    }
-    .ph-cond.new { background: #dcfce7; color: #166534; }
-    .ph-bat, .ph-cyc { font-size: 11.5px; color: #64748b; }
-    .ph-imei {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 11.5px; color: #94a3b8; margin-top: 3px; letter-spacing: .3px;
-    }
-    .ph-note2 { font-size: 11.5px; color: #94a3b8; margin-top: 2px; }
-    .ph-unit-r { text-align: right; flex-shrink: 0; }
-    .ph-price { font-size: 15px; font-weight: 700; color: var(--ink); }
-    .ph-pick {
-      margin-top: 5px; border: 0; cursor: pointer;
-      background: var(--sage); color: #fff;
-      font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 8px;
-      transition: opacity .15s;
-    }
-    .ph-pick:hover { opacity: .88; }
-    /* Telefon "son bilan" (grouped) bucketlari */
-    .ph-buckets { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-    .ph-bucket {
-      display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
-      border: 1.5px solid #e6e6e6; border-radius: 12px; padding: 11px 13px;
-      background: #fff; cursor: pointer; transition: border-color .15s, background .15s;
-    }
-    .ph-bucket:hover { border-color: var(--sage); }
-    .ph-bucket.active { border-color: var(--sage); background: color-mix(in srgb, var(--sage) 8%, #fff); }
-    .ph-bucket-l { flex: 1; min-width: 0; }
-    .ph-bucket-spec { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .ph-bspec {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 12.5px; font-weight: 600; color: var(--ink);
-      background: #f1f5f9; padding: 2px 8px; border-radius: 6px;
-    }
-    .ph-bucket-cnt { font-size: 11.5px; color: #64748b; margin-top: 4px; }
-    .ph-bucket-price { font-size: 15px; font-weight: 700; color: var(--ink); flex-shrink: 0; }
-    .cart-item-imei {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 10.5px; color: #94a3b8; margin-top: 1px;
-    }
     .detail-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
     .detail-add-btn {
       flex: 1; height: 52px; border-radius: var(--radius-sm); border: none;
@@ -1059,6 +1140,23 @@
       padding-top: 22px; border-top: 1px solid var(--line-soft); margin-top: 8px; text-align: justify;
       font-weight: 400;
     }
+    /* ── Similar products rail ─────────────── */
+    .detail-similar { width: 100%; max-width: 1040px; min-width: 0; margin: 0 auto; padding: 8px 28px 100px; }
+    @media (max-width: 640px) { .detail-similar { padding: 4px 18px 100px; } }
+    .detail-similar-title {
+      font-size: 12px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase;
+      letter-spacing: .06em; margin: 0 0 18px; padding-top: 28px; border-top: 1px solid var(--line-soft);
+    }
+    .detail-similar-rail {
+      display: flex; width: 100%; max-width: 100%; min-width: 0; gap: 20px;
+      overflow-x: auto; overflow-y: hidden; padding-bottom: 8px;
+      align-items: stretch; justify-content: flex-start;
+      scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    .detail-similar-item { flex: 0 0 148px; width: 148px; scroll-snap-align: start; display: flex; }
+    .detail-similar-item > .product-item { flex: 1; min-width: 0; }
+    @media (max-width: 640px) { .detail-similar-item { flex-basis: 128px; width: 128px; } }
     .variant-chip {
       display: flex; flex-direction: column; align-items: flex-start;
       height: auto !important; padding: 8px 14px !important;
@@ -1090,7 +1188,7 @@
     .detail-qty-wrap {
       display: flex; align-items: center;
       border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
-      height: 52px; flex-shrink: 0;
+      width: 154px; height: 52px; flex-shrink: 0;
       background: var(--bg-card);
     }
     .detail-qty-btn {
@@ -1098,22 +1196,23 @@
       font-size: 20px; color: var(--ink-soft); cursor: pointer; transition: background .15s;
     }
     .detail-qty-btn:hover { background: var(--sage-tint); color: var(--sage-deep); }
-    .detail-qty-num {
-      width: 42px; text-align: center; font-size: 16px; font-weight: 600;
-      border-left: 1px solid var(--line-soft); border-right: 1px solid var(--line-soft);
-      color: var(--ink);
-    }
-    /* Og'irlik (kg) tovar — kasr miqdor kiritish */
-    .detail-qty-wrap.weight { padding: 0 6px 0 12px; gap: 4px; }
+    .detail-qty-btn:disabled { color: var(--line); cursor: not-allowed; background: transparent; }
     .detail-qty-input {
-      width: 80px; height: 100%; border: none; background: transparent;
-      font-size: 17px; font-weight: 600; text-align: center; color: var(--ink); outline: none;
+      flex: 1; min-width: 0; width: 62px; height: 100%;
+      border: none; border-left: 1px solid var(--line-soft); border-right: 1px solid var(--line-soft);
+      background: transparent; font-size: 16px; font-weight: 600;
+      text-align: center; color: var(--ink); outline: none;
       -moz-appearance: textfield;
       letter-spacing: -0.01em;
     }
+    .detail-qty-input:focus { background: var(--sage-tint); box-shadow: inset 0 0 0 2px var(--sage); }
     .detail-qty-input::-webkit-outer-spin-button,
     .detail-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .detail-qty-unit { font-size: 13px; font-weight: 600; color: var(--sage-deep); white-space: nowrap; padding-right: 6px; }
+    @media (max-width: 480px) {
+      .detail-controls { display: grid; grid-template-columns: 132px minmax(0, 1fr); }
+      .detail-qty-wrap { width: 132px; }
+      .detail-qty-btn { width: 38px; }
+    }
 
     /* ── Cart Redesign ───────────────────────── */
     .cart-sheet-new {
@@ -1173,7 +1272,14 @@
     .cart-qty-input::-webkit-outer-spin-button,
     .cart-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .cqu { font-size: 11px; font-weight: 600; color: var(--sage-deep); }
-    .cqn { width: 28px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink); }
+    .cqn {
+      width: 42px; height: 32px; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink);
+      border: 1px solid var(--line); border-radius: 10px; background: var(--bg-card); outline: none;
+      -moz-appearance: textfield;
+    }
+    .cqn:focus { border-color: var(--sage); box-shadow: 0 0 0 3px var(--sage-tint); }
+    .cqn::-webkit-outer-spin-button,
+    .cqn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .cart-divider { height: 1px; background: var(--line-soft); margin: 0 22px; }
     .cart-footer-new { padding: 18px 22px 32px; background: var(--bg); border-top: 1px solid var(--line-soft); }
     .cart-total-card {
@@ -1185,7 +1291,7 @@
     .cart-total-lbl { font-size: 13px; color: var(--sage-deep); font-weight: 600; letter-spacing: -0.01em; }
     .cart-total-val {
       font-family: 'Montserrat', -apple-system, sans-serif;
-      font-size: 24px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em;
+      font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em;
     }
     .cart-checkout-btn {
       width: 100%; height: 54px; border-radius: var(--radius-sm); border: none;
@@ -1201,7 +1307,7 @@
     .cart-empty-text { font-family: 'Montserrat', -apple-system, sans-serif; font-size: 18px; font-weight: 600; color: var(--ink-soft); }
     .cart-empty-sub { font-size: 13px; color: var(--ink-faint); }
 
-  
+
     /* ── Add button override (was Tilda yellow #FBBC05, now warm charcoal) ── */
     .add-btn {
       background: #2b2620 !important; color: #fff !important;
@@ -1221,14 +1327,19 @@
 <body>
 <div id="root"></div>
 <script type="module">
-import React, { useState, useEffect, useMemo, useRef } from 'https://esm.sh/react@18.2.0'
-import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client'
-import htm from 'https://esm.sh/htm@3.1.1'
+import React, { useState, useEffect, useMemo, useRef } from './vendor/react.bundle.mjs'
+import { createRoot, createPortal } from './vendor/react-dom-client.bundle.mjs?v=20260912-2'
+import htm from './vendor/htm.bundle.mjs'
 const html = htm.bind(React.createElement)
 
-const { API_URL, STOREFRONT_KEY } = window.STORE_CONFIG
+const { API_URL='', STOREFRONT_KEY='' } = window.STORE_CONFIG || {}
 const HDR = { 'Content-Type': 'application/json', 'X-Storefront-Key': STOREFRONT_KEY }
 const ACCENT = '#7a8b6f', AD = '#5d6e54'
+
+// Mahsulot butunlay tugaganmi (variant/birlikdan qat'i nazar)
+const isOutOfStock = p => (p.has_variants && p.variants?.length)
+  ? !p.in_stock
+  : (p.stock_type === 'tracked' && (p.stock ?? 0) <= 0)
 
 const som   = n => { const v = Math.round(+n||0); return v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' so\'m' }
 // Narxni O'Z valyutasida: USD → "$50", aks holda so'm.
@@ -1262,14 +1373,117 @@ const isWeightUnit = name => /kilogram|kilogramm|gramm|\bkg\b|\bg\b/i.test((name
 const fmtQty = n => Number.isInteger(+n) ? String(+n) : String(+(+n).toFixed(3))
 const PM_LABELS = { cash:'Naqd', card:'Karta', transfer:"O'tkazma", credit:'Nasiya', mixed:'Aralash', click:'Click', payme:'Payme', uzum:'Uzum', humo:'Humo', uzcard:'UzCard', installment:"Bo'lib to'lash", exchange_credit:'Ayirboshlash' }
 const pmLabel = m => PM_LABELS[m] || (m || '—')
-const media = u => !u ? '' : u.startsWith('http') ? u : API_URL.replace(/\/api\/?$/,'') + u
+const media = u => !u ? '' : (/^(https?:|data:|blob:)/.test(u) || u.startsWith('assets/') || u.startsWith('./') || u.startsWith('../')) ? u : API_URL.replace(/\/api\/?$/,'') + u
+// Bir xil narxdagi mahsulotni tez topish uchun taxminiy narx
+const approxPrice = p => p.units?.[0]?.price ?? p.variants?.[0]?.price ?? 0
+// O'xshash mahsulotlar: bir xil kategoriya (avval o'z kategoriyasi, keyin ota-kategoriya),
+// narxi yaqinroqlari birinchi bo'lib chiqadi. Backend chaqiruvisiz, xotiradagi ro'yxatdan.
+const similarProducts = (p, all, limit=10) => {
+  if (!p) return []
+  const sameCat = [], sameParent = []
+  for (const x of all) {
+    if (x.id === p.id) continue
+    if (p.category_id && x.category_id === p.category_id) sameCat.push(x)
+    else if (p.category_parent_id && x.category_parent_id === p.category_parent_id) sameParent.push(x)
+  }
+  const basePrice = approxPrice(p)
+  const byCloseness = list => [...list].sort((a,b) => Math.abs(approxPrice(a)-basePrice) - Math.abs(approxPrice(b)-basePrice))
+  return [...byCloseness(sameCat), ...byCloseness(sameParent)].slice(0, limit)
+}
+// Qidiruvga aniq mos kelmagan taqdirda: nom/kategoriya so'zlari mos kelgan mahsulotlarni taklif qilish
+const searchSuggestions = (query, all, limit=8) => {
+  const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return []
+  const scored = []
+  for (const p of all) {
+    const hay = (p.name+' '+(p.category_name||'')+' '+(p.category_parent_name||'')).toLowerCase()
+    const score = words.reduce((s,w) => s + (hay.includes(w) ? 1 : 0), 0)
+    if (score > 0) scored.push([p, score])
+  }
+  scored.sort((a,b) => b[1]-a[1])
+  return scored.slice(0, limit).map(s => s[0])
+}
 // Hozircha do'konda banner yuklanmagan bo'lsa ko'rsatiladigan namuna rasmlar
-const DEMO_BANNERS = [
-  'banners_img/4d82f95b9703cc6d055e0d64e25ee322.jpg',
-  'banners_img/IMG_20260824_170904_808(1).jpg',
-  'banners_img/imgi_6_Gemini_Generated_Image_bb84u4bb84u4bb84_1.jpg',
-].map(encodeURI)
-const api   = async (p,o={}) => { const r=await fetch(API_URL+p,{...o,headers:HDR}); if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||'Xatolik'); return r.json() }
+// Dukonline bannerlari boshqaruv panelidan keladi. Lux Home'ga xos yoki
+// repozitoriyda mavjud bo'lmagan demo rasmlarni ko'rsatmaymiz.
+const DEMO_BANNERS = []
+const api = async (p,o={}) => {
+  if (!API_URL || !STOREFRONT_KEY) throw new Error("Do‘kon sozlamasi yuklanmadi")
+  const r = await fetch(API_URL+p,{...o,headers:{...HDR,...(o.headers||{})}})
+  if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||'Xatolik')
+  return r.json()
+}
+
+let bodyLockCount = 0
+let bodyPrevOverflow = ''
+const dialogStack = []
+const lockBody = () => {
+  if (bodyLockCount++ === 0) {
+    bodyPrevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+  }
+}
+const unlockBody = () => {
+  bodyLockCount = Math.max(0, bodyLockCount - 1)
+  if (bodyLockCount === 0) document.body.style.overflow = bodyPrevOverflow
+}
+
+// Dialoglar uchun: ESC, Tab focus trap, body scroll lock va focusni qaytarish.
+function useDialogA11y(open, onClose) {
+  const ref = useRef(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  useEffect(() => {
+    if (!open) return
+    const returnTo = document.activeElement
+    const token = { ref }
+    dialogStack.push(token)
+    lockBody()
+    const focusable = () => [...(ref.current?.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || [])]
+    const focusTimer = requestAnimationFrame(() => (focusable()[0] || ref.current)?.focus())
+    const onKey = e => {
+      if (dialogStack[dialogStack.length - 1] !== token) return
+      if (e.key === 'Escape') { e.preventDefault(); closeRef.current?.(); return }
+      if (e.key !== 'Tab') return
+      const items = focusable()
+      if (!items.length) { e.preventDefault(); ref.current?.focus(); return }
+      const first = items[0], last = items[items.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      cancelAnimationFrame(focusTimer)
+      window.removeEventListener('keydown', onKey)
+      const stackIndex = dialogStack.indexOf(token)
+      if (stackIndex >= 0) dialogStack.splice(stackIndex, 1)
+      unlockBody()
+      if (returnTo && document.contains(returnTo)) returnTo.focus()
+    }
+  }, [open])
+  return ref
+}
+
+// Leaflet faqat xarita ochilganda yuklanadi; katalogning asosiy yuklanishini to'smaydi.
+let leafletPromise
+const loadLeaflet = () => {
+  if (window.L) return Promise.resolve(window.L)
+  if (leafletPromise) return leafletPromise
+  leafletPromise = new Promise((resolve, reject) => {
+    if (!document.querySelector('link[data-leaflet]')) {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'; link.href = './vendor/leaflet/leaflet.css'; link.dataset.leaflet = 'true'
+      document.head.appendChild(link)
+    }
+    const script = document.createElement('script')
+    script.src = './vendor/leaflet/leaflet.js'
+    script.async = true
+    script.onload = () => resolve(window.L)
+    script.onerror = () => { leafletPromise = null; reject(new Error('Xarita yuklanmadi')) }
+    document.head.appendChild(script)
+  })
+  return leafletPromise
+}
 
 // ── SVG Icons ──────────────────────────────────────────────────────────
 const Ic = ({size=20,sw=1.8,children}) => html`<svg width=${size} height=${size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth=${sw} strokeLinecap="round" strokeLinejoin="round">${children}</svg>`
@@ -1280,6 +1494,11 @@ const IX      = ({s=16}) => html`<${Ic} size=${s} sw=${2.2}><line x1="18" y1="6"
 const IChevronDown = ({s=12}) => html`<${Ic} size=${s} sw=${2.6}><path d="M6 9l6 6 6-6"/></${Ic}>`
 const ICaret  = ({s=12}) => html`<${Ic} size=${s} sw=${2.5}><polyline points="6 9 12 15 18 9"/></${Ic}>`
 const IBox    = ({s=40}) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="#d0d0d0" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`
+const IPin    = ({s=20}) => html`<${Ic} size=${s}><path d="M21 10c0 6.5-9 12-9 12s-9-5.5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></${Ic}>`
+const IMapIcon= ({s=20}) => html`<${Ic} size=${s}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></${Ic}>`
+const ICrosshair = ({s=20}) => html`<${Ic} size=${s}><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></${Ic}>`
+const IZoomIn  = ({s=18}) => html`<${Ic} size=${s}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></${Ic}>`
+const IZoomOut = ({s=18}) => html`<${Ic} size=${s}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></${Ic}>`
 
 // ── Magic orb animation ────────────────────────────────────────────────
 function magicOrb(fromEl, toEl) {
@@ -1299,35 +1518,118 @@ function magicOrb(fromEl, toEl) {
   setTimeout(() => { orb.remove() }, 650)
 }
 
+// ── ImgLightbox — keyboard, mouse va touch bilan xavfsiz zoom ─────────
+const ZOOM_MIN = 1, ZOOM_MAX = 6
+function ImgLightbox({ src, alt, onClose }) {
+  const [zoom, setZoom] = useState(1)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [dragging, setDragging] = useState(false)
+  const dialogRef = useDialogA11y(true, onClose)
+  const stageRef = useRef(null)
+  const dragSt = useRef(null)
+  const pinchSt = useRef(null)
+
+  const clampZ = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z))
+  const reset = () => { setZoom(1); setPos({ x: 0, y: 0 }) }
+  const rel = (cx, cy) => {
+    const r = stageRef.current.getBoundingClientRect()
+    return { x: cx - (r.left + r.width / 2), y: cy - (r.top + r.height / 2) }
+  }
+  const zoomAt = (cx, cy, factor) => {
+    const nz = clampZ(zoom * factor)
+    if (nz === zoom) return
+    if (nz === ZOOM_MIN) { reset(); return }
+    const c = rel(cx, cy), k = nz / zoom
+    setPos({ x: c.x - (c.x - pos.x) * k, y: c.y - (c.y - pos.y) * k })
+    setZoom(nz)
+  }
+  const step = dir => zoomAt(window.innerWidth / 2, window.innerHeight / 2, dir > 0 ? 1.45 : 1 / 1.45)
+
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el) return
+    const onWheel = e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15) }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  })
+
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el) return
+    const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+    const start = e => { if (e.touches.length === 2) pinchSt.current = { d: dist(e.touches), z: zoom, p: { ...pos } } }
+    const move = e => {
+      if (e.touches.length !== 2 || !pinchSt.current) return
+      e.preventDefault()
+      const s = pinchSt.current
+      const nz = clampZ(s.z * dist(e.touches) / s.d)
+      const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2
+      const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2
+      const c = rel(cx, cy), k = nz / s.z
+      setPos({ x: c.x - (c.x - s.p.x) * k, y: c.y - (c.y - s.p.y) * k })
+      setZoom(nz)
+    }
+    const end = () => { pinchSt.current = null }
+    el.addEventListener('touchstart', start, { passive: true })
+    el.addEventListener('touchmove', move, { passive: false })
+    el.addEventListener('touchend', end)
+    el.addEventListener('touchcancel', end)
+    return () => {
+      el.removeEventListener('touchstart', start); el.removeEventListener('touchmove', move)
+      el.removeEventListener('touchend', end); el.removeEventListener('touchcancel', end)
+    }
+  })
+
+  const onDown = e => {
+    if (zoom <= 1) return
+    e.preventDefault()
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+    dragSt.current = { sx: e.clientX, sy: e.clientY, px: pos.x, py: pos.y }
+    setDragging(true)
+  }
+  const onMove = e => {
+    if (!dragSt.current) return
+    const d = dragSt.current
+    setPos({ x: d.px + e.clientX - d.sx, y: d.py + e.clientY - d.sy })
+  }
+  const onUp = () => { dragSt.current = null; setDragging(false) }
+
+  return createPortal(html`
+    <div ref=${dialogRef} className="lb-overlay" role="dialog" aria-modal="true" aria-labelledby="lightbox-title" tabIndex="-1"
+      onClick=${e => { e.stopPropagation(); if (e.target === e.currentTarget) onClose() }}>
+      <div className="lb-top">
+        <div className="lb-title" id="lightbox-title">${alt || 'Mahsulot rasmi'}</div>
+        <div className="lb-actions">
+          <button type="button" className="lb-btn" aria-label="Kichraytirish" onClick=${() => step(-1)} disabled=${zoom <= ZOOM_MIN}><${IZoomOut} s=${18}/></button>
+          <button type="button" className="lb-zoom-label" aria-label="Boshlang‘ich o‘lchamga qaytarish" onClick=${reset}>${Math.round(zoom * 100)}%</button>
+          <button type="button" className="lb-btn" aria-label="Kattalashtirish" onClick=${() => step(1)} disabled=${zoom >= ZOOM_MAX}><${IZoomIn} s=${18}/></button>
+          <button type="button" className="lb-btn" aria-label="Yopish" onClick=${onClose}><${IX} s=${17}/></button>
+        </div>
+      </div>
+      <div ref=${stageRef} className=${'lb-stage' + (zoom > 1 ? ' zoomed' : '') + (dragging ? ' dragging' : '')}
+        onClick=${e => { e.stopPropagation(); if (zoom === 1 && e.target === stageRef.current) onClose() }}
+        onPointerDown=${onDown} onPointerMove=${onMove} onPointerUp=${onUp} onPointerCancel=${onUp}
+        onDoubleClick=${e => zoom > 1 ? reset() : zoomAt(e.clientX, e.clientY, 2.5 / zoom)}>
+        <img className=${dragging ? 'no-anim' : ''} src=${src} alt=${alt} draggable=${false}
+          style=${{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${zoom})` }}/>
+      </div>
+      <div className="lb-bottom">Ikki marta bosing yoki g‘ildirak bilan kattalashtiring · Zoom holatda sudrang · ESC — yopish</div>
+    </div>`, document.body)
+}
+
+function SafeImage({ src, alt, fallbackSize=40, loading }) {
+  const [failed, setFailed] = useState(false)
+  useEffect(() => setFailed(false), [src])
+  return !src || failed
+    ? html`<span className="image-fallback"><${IBox} s=${fallbackSize}/><span className="sr-only">Rasm mavjud emas</span></span>`
+    : html`<img src=${src} alt=${alt} loading=${loading} onError=${()=>setFailed(true)}/>`
+}
+
 // ── ProductDetail ─────────────────────────────────────────────────────
-function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onAddBucket, cart }) {
+function ProductDetail({ product, onClose, onAdd, onAddVariant, cart, allProducts, setCartQty, showImages, onSelect }) {
   const p = product
   const hasVariants = !!(p.has_variants && p.variants?.length)
-  // ── Telefon (IMEI) tovari ──────────────────────────────────────────
-  // Karta = MODEL. Ichidagi nusxalar rang+xotira+region bo'yicha
-  // guruhlangan holda keladi (backend). Guruh "uniform" bo'lsa nusxalar
-  // farqsiz — mijoz shunchaki savatga qo'shadi; farq qilsa (b/u) har
-  // nusxa alohida ko'rinadi: batareya, sikl, narx.
-  const phone = p.phone && (p.phone.groups?.length || p.phone.buckets?.length) ? p.phone : null
-  // "son bilan" (grouped) — spec+narx bucket, mijoz son tanlaydi;
-  // "dona-dona" (individual) — har IMEI alohida (guruh + units)
-  const isGrouped = !!(phone && phone.mode === 'grouped')
-  const phGroups = phone && !isGrouped ? phone.groups : []
-  const phBuckets = phone && isGrouped ? (phone.buckets || []) : []
-  const [phKey, setPhKey] = useState(phGroups[0]?.key ?? null)
-  const [phBKey, setPhBKey] = useState(phBuckets[0]?.key ?? null)
-  const phSel = phone && !isGrouped ? (phGroups.find(g => g.key === phKey) || phGroups[0]) : null
-  const phBSel = phBuckets.find(b => b.key === phBKey) || phBuckets[0] || null
-  const phStorages = [...new Set(phGroups.map(g => g.storage).filter(Boolean))]
-  const phColors = phGroups.filter(g => !phSel?.storage || g.storage === phSel.storage)
-  const phRegions = phColors.filter(g => !phSel?.color || g.color === phSel.color)
-  const pickPhone = (patch) => {
-    const want = { storage: phSel?.storage, color: phSel?.color, region: phSel?.region, ...patch }
-    const g = phGroups.find(x => x.storage === want.storage && x.color === want.color && x.region === want.region)
-      || phGroups.find(x => x.storage === want.storage && x.color === want.color)
-      || phGroups.find(x => x.storage === want.storage)
-    if (g) setPhKey(g.key)
-  }
+  const similar = useMemo(() => similarProducts(p, allProducts||[], 10), [p, allProducts])
 
   const _firstInStock = hasVariants
     ? (p.variants.find(v => v.in_stock) || p.variants[0])
@@ -1340,7 +1642,16 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onA
   const [unitId, setUnitId] = useState(_firstAvail?.unit_id ?? null)
   const [qty,    setQty]    = useState(1)
   const [added,  setAdded]  = useState(false)
+  const [zoomOpen, setZoomOpen] = useState(false)
+  const [imageError, setImageError] = useState(false)
   const addRef = useRef(null)
+  const dialogRef = useDialogA11y(true, onClose)
+
+  useEffect(() => {
+    setVariantId(_firstInStock?.id ?? null)
+    setUnitId(_firstAvail?.unit_id ?? null)
+    setQty(1); setAdded(false); setZoomOpen(false); setImageError(false)
+  }, [p.id])
 
   const selVariant = hasVariants ? (p.variants.find(v => v.id === variantId) || p.variants[0]) : null
   const unit = !hasVariants ? (p.units?.find(u => u.unit_id === unitId) || p.units?.[0]) : null
@@ -1356,13 +1667,16 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onA
   const maxQty = hasVariants
     ? (selVariant?.in_stock ? (selVariant.stock != null ? Math.floor(selVariant.stock) : Infinity) : 0)
     : (p.stock_type === 'tracked' ? (isWeight ? p.stock / mult : Math.floor(p.stock / mult)) : Infinity)
-  const cartKey = hasVariants ? `${p.id}_v${variantId}` : `${p.id}_${unit?.unit_id??'base'}`
+  const cartKey = hasVariants ? `${p.id}_v${selVariant?.id??'base'}` : `${p.id}_${unit?.unit_id??'base'}`
   const inCart = cart.find(x => x.key === cartKey)?.qty || 0
   const out    = maxQty <= 0
+  const availableToAdd = maxQty === Infinity ? Infinity : Math.max(0, maxQty - inCart)
+  const atCartLimit = availableToAdd <= 0
 
   const handleAdd = () => {
-    if (out || added) return
-    const q = isWeight ? Math.max(0.001, +qty || 0) : Math.max(1, Math.round(+qty || 1))
+    if (out || atCartLimit || added) return
+    const requested = isWeight ? Math.max(0.001, +qty || 0) : Math.max(1, Math.floor(+qty || 1))
+    const q = availableToAdd === Infinity ? requested : Math.min(requested, availableToAdd)
     if (!q) return
     if (hasVariants) {
       onAddVariant(p, selVariant, q, addRef.current)
@@ -1373,38 +1687,38 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onA
     setTimeout(() => setAdded(false), 1400)
   }
 
-  useEffect(() => { document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = '' } }, [])
-
   return html`
-    <div className="detail-overlay">
+    <div ref=${dialogRef} className="detail-overlay" role="dialog" aria-modal="true" aria-labelledby="product-detail-title" tabIndex="-1">
       <div className="detail-topbar">
-        <button className="detail-back" onClick=${onClose}>
+        <button type="button" className="detail-back" onClick=${onClose}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
           Boshqa mahsulotlar
         </button>
-        <button className="detail-close-btn" onClick=${onClose}>✕</button>
+        <button type="button" className="detail-close-btn" aria-label="Mahsulot oynasini yopish" onClick=${onClose}>✕</button>
       </div>
 
       <div className="detail-body">
         <!-- Image -->
-        <div className="detail-img-side">
-          ${p.image
-            ? html`<img src=${media(p.image)} alt=${p.name}/>`
-            : html`<${IBox} s=${100}/>`}
+        <div className=${'detail-img-side' + (p.image && !imageError ? ' zoomable' : '')}
+          role=${p.image && !imageError ? 'button' : undefined} tabIndex=${p.image && !imageError ? 0 : undefined}
+          aria-label=${p.image && !imageError ? p.name + ' rasmini kattalashtirish' : undefined}
+          onClick=${p.image && !imageError ? () => setZoomOpen(true) : undefined}
+          onKeyDown=${p.image && !imageError ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setZoomOpen(true) } } : undefined}>
+          ${p.image && !imageError
+            ? html`<img src=${media(p.image)} alt=${p.name} onError=${()=>setImageError(true)}/>`
+            : html`<div className="image-fallback"><${IBox} s=${100}/><span className="sr-only">Rasm mavjud emas</span></div>`}
+          ${p.image && !imageError && html`<div className="img-zoom-hint"><${IZoomIn} s=${13}/>Kattalashtirish</div>`}
         </div>
 
         <!-- Info -->
         <div className="detail-info-side">
           ${p.category_name && html`<div className="detail-cat">${p.category_name}</div>`}
-          <h1 className="detail-name">${p.name}</h1>
+          <h1 className="detail-name" id="product-detail-title">${p.name}</h1>
           <div className="detail-price">
-            ${phone
-              ? html`${money(phSel?.from_cur_price ?? phSel?.from_price ?? 0, phSel?.currency ?? '')}
-                     ${(phSel?.count > 1 || phGroups.length > 1) && html`<span className="ph-from">dan</span>`}`
-              : html`${dispOrigVal && html`<span className="price-orig-strike">${money(dispOrigVal, dispCur)}</span>`}
-                     ${money(dispVal, dispCur)}`}
+            ${dispOrigVal && html`<span className="price-orig-strike">${money(dispOrigVal, dispCur)}</span>`}
+            ${money(dispVal, dispCur)}
             ${p.discount_percent > 0 && html`<span className="disc-badge">−${Math.round(p.discount_percent)}%</span>`}
           </div>
 
@@ -1415,6 +1729,7 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onA
               ${p.variants.map(v => html`
                 <button key=${v.id}
                   className=${'detail-unit-chip variant-chip'+(variantId===v.id?' active':'')+(v.in_stock?'':' unavailable')}
+                  type="button" aria-pressed=${variantId===v.id} disabled=${!v.in_stock}
                   onClick=${()=>{ if(v.in_stock){setVariantId(v.id);setQty(1)} }}>
                   <span className="vc-name">${v.name}</span>
                   ${(v.cur_original_price ?? v.original_price) != null && html`<span className="vc-orig">${money(v.cur_original_price ?? v.original_price, v.currency)}</span>`}
@@ -1431,124 +1746,18 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onA
               ${p.units.map(u => html`
                 <button key=${u.unit_id}
                   className=${'detail-unit-chip'+(unitId===u.unit_id?' active':'')}
+                  type="button" aria-pressed=${unitId===u.unit_id}
                   onClick=${()=>{setUnitId(u.unit_id);setQty(1)}}>
                   ${u.unit_name}
                 </button>`)}
             </div>`}
-
-          <!-- ── Telefon (dona-dona): konfiguratsiya + nusxa tanlash ─── -->
-          ${phone && !isGrouped && html`
-            ${phStorages.length > 1 && html`
-              <div className="detail-unit-label">Xotira</div>
-              <div className="detail-unit-select">
-                ${phStorages.map(st => html`
-                  <button key=${st} className=${'detail-unit-chip'+(phSel?.storage===st?' active':'')}
-                    onClick=${()=>pickPhone({storage:st})}>${st}</button>`)}
-              </div>`}
-
-            ${phColors.length > 1 && html`
-              <div className="detail-unit-label">Rang</div>
-              <div className="detail-unit-select">
-                ${phColors.map(g => html`
-                  <button key=${g.key} className=${'detail-unit-chip ph-color'+(phSel?.color===g.color?' active':'')}
-                    onClick=${()=>pickPhone({storage:g.storage, color:g.color})}>
-                    ${g.color_hex && html`<i className="ph-dot" style=${{background:g.color_hex}}></i>`}
-                    ${g.color_label || 'Rang'}
-                  </button>`)}
-              </div>`}
-
-            ${phRegions.length > 1 && html`
-              <div className="detail-unit-label">Region</div>
-              <div className="detail-unit-select">
-                ${phRegions.map(g => html`
-                  <button key=${g.key} className=${'detail-unit-chip'+(phSel?.region===g.region?' active':'')}
-                    onClick=${()=>pickPhone({storage:g.storage, color:g.color, region:g.region})}>
-                    ${g.region || '—'}
-                  </button>`)}
-              </div>`}
-
-            <!-- Rasm umumiy bo'lgani uchun HAQIQIY rangni alohida ko'rsatamiz -->
-            ${phSel?.color_label && html`
-              <div className="ph-real-color">
-                ${phSel.color_hex && html`<i className="ph-dot lg" style=${{background:phSel.color_hex}}></i>`}
-                Haqiqiy rangi: <b>${phSel.color_label}</b>
-                <span className="ph-note">rasm namunaviy</span>
-              </div>`}
-
-            ${phSel && phSel.uniform
-              ? html`
-                <div className="detail-stock ok">✓ Mavjud: ${phSel.count} ta</div>
-                <div className="ph-unit-meta">
-                  ${phSel.units[0].condition_label}
-                  ${phSel.units[0].battery_health != null && html` · 🔋 ${phSel.units[0].battery_health}%`}
-                  ${phSel.units[0].battery_cycles != null && html` · ${phSel.units[0].battery_cycles} sikl`}
-                </div>
-                <div className="detail-controls">
-                  <button className="detail-add-btn" onClick=${e=>onAddSerial(p, phSel.units[0], e.currentTarget)}>
-                    Savatga qo'shish
-                  </button>
-                </div>`
-              : phSel && html`
-                <div className="detail-unit-label">Mavjud nusxalar (${phSel.count} ta)</div>
-                <div className="ph-units">
-                  ${phSel.units.map(u => html`
-                    <div key=${u.id} className="ph-unit">
-                      <div className="ph-unit-l">
-                        <div className="ph-unit-top">
-                          <span className=${'ph-cond'+(u.condition==='new'?' new':'')}>${u.condition_label}</span>
-                          ${u.battery_health != null && html`<span className="ph-bat">🔋 ${u.battery_health}%</span>`}
-                          ${u.battery_cycles != null && html`<span className="ph-cyc">${u.battery_cycles} sikl</span>`}
-                        </div>
-                        <div className="ph-imei">${u.imei_masked}</div>
-                        ${u.note && html`<div className="ph-note2">${u.note}</div>`}
-                      </div>
-                      <div className="ph-unit-r">
-                        <div className="ph-price">${money(u.cur_price ?? u.price, u.currency)}</div>
-                        <button className="ph-pick" onClick=${e=>onAddSerial(p, u, e.currentTarget)}>Tanlash</button>
-                      </div>
-                    </div>`)}
-                </div>`}
-          `}
-
-          <!-- ── Telefon (son bilan): spec+narx bucket, son tanlash ──── -->
-          ${phone && isGrouped && html`
-            <div className="detail-unit-label">Variant / narx</div>
-            <div className="ph-buckets">
-              ${phBuckets.map(b => html`
-                <button key=${b.key} className=${'ph-bucket'+(phBSel?.key===b.key?' active':'')}
-                  onClick=${()=>{setPhBKey(b.key); setQty(1)}}>
-                  <div className="ph-bucket-l">
-                    <div className="ph-bucket-spec">
-                      ${b.storage && html`<span className="ph-bspec">${b.storage}</span>`}
-                      ${b.color_label && html`<span className="ph-bspec">
-                        ${b.color_hex && html`<i className="ph-dot" style=${{background:b.color_hex}}></i>`}${b.color_label}
-                      </span>`}
-                      ${b.region && html`<span className="ph-bspec">${b.region}</span>`}
-                    </div>
-                    <div className="ph-bucket-cnt">${b.count} dona mavjud</div>
-                  </div>
-                  <div className="ph-bucket-price">${money(b.cur_price ?? b.price, b.currency)}</div>
-                </button>`)}
-            </div>
-            ${phBSel && html`
-              <div className="detail-controls">
-                <div className="detail-qty-wrap">
-                  <button className="detail-qty-btn" onClick=${()=>setQty(q=>Math.max(1,q-1))}>−</button>
-                  <span className="detail-qty-num">${qty}</span>
-                  <button className="detail-qty-btn" onClick=${()=>setQty(q=>Math.min(q+1, phBSel.count||1))}>+</button>
-                </div>
-                <button className="detail-add-btn" onClick=${e=>onAddBucket(p, phBSel, qty, e.currentTarget)}>
-                  Savatga qo'shish
-                </button>
-              </div>`}
-          `}
 
           <!-- Stock -->
           ${hasVariants && !out && selVariant?.stock != null && html`
             <div className="detail-stock ok">✓ Stokda: ${Math.floor(selVariant.stock)} ta</div>`}
           ${hasVariants && out && html`
             <div className="detail-stock out">❌ Stokda yo'q</div>`}
-          ${!hasVariants && !phone && p.stock_type === 'tracked' && html`
+          ${!hasVariants && p.stock_type === 'tracked' && html`
             <div className=${'detail-stock'+(out?' out':' ok')}>
               ${out ? '❌ Stokda yo\'q' : '✓ Stokda: '+fmtQty(maxQty)+' '+(unit?.unit_name||'dona')}
             </div>`}
@@ -1561,31 +1770,43 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onA
             </div>`}
 
           <!-- Qty + Add -->
-          ${!phone && html`
           <div className="detail-controls">
-            ${isWeight
-              ? html`<div className="detail-qty-wrap weight">
-                  <input type="number" step="0.001" min="0" className="detail-qty-input"
-                    defaultValue="1" placeholder="0.5"
-                    onInput=${e=>setQty(+e.target.value||0)}/>
-                  <span className="detail-qty-unit">${unit?.unit_name||'kg'}</span>
-                </div>`
-              : html`<div className="detail-qty-wrap">
-                  <button className="detail-qty-btn" onClick=${()=>setQty(q=>Math.max(1,q-1))}>−</button>
-                  <span className="detail-qty-num">${qty}</span>
-                  <button className="detail-qty-btn" onClick=${()=>setQty(q=>maxQty===Infinity?q+1:Math.min(q+1,maxQty-inCart))}>+</button>
-                </div>`}
-            <button ref=${addRef} className=${'detail-add-btn'+(added?' btn-added':'')} onClick=${handleAdd} disabled=${out}>
+            <div className="detail-qty-wrap">
+              <button type="button" className="detail-qty-btn" aria-label="Miqdorni kamaytirish" disabled=${atCartLimit}
+                onClick=${()=>setQty(q=>isWeight ? Math.max(0.001, Math.round((q-0.001)*1000)/1000) : Math.max(1,q-1))}>−</button>
+              <${QuantityInput} className="detail-qty-input" value=${qty} max=${availableToAdd}
+                allowDecimal=${isWeight} disabled=${atCartLimit} onCommit=${setQty}/>
+              <button type="button" className="detail-qty-btn" aria-label="Miqdorni oshirish" disabled=${atCartLimit}
+                onClick=${()=>setQty(q=>{
+                  const next = isWeight ? Math.round((q+0.001)*1000)/1000 : q+1
+                  return availableToAdd===Infinity ? next : Math.min(next,availableToAdd)
+                })}>+</button>
+            </div>
+            <button type="button" ref=${addRef} className=${'detail-add-btn'+(added?' btn-added':'')} onClick=${handleAdd} disabled=${out||atCartLimit}>
               ${added
                 ? html`<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Qo'shildi!`
-                : html`<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.55 13c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.37-.66-.11-1.48-.87-1.48H5.21l-.94-2H1v2h2l3.6 7.59-1.35 2.44C5.18 13.55 5 13.76 5 14c0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45zM7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg> ${out ? 'Stokda yo\'q' : 'Savatga qo\'shish'}`}
+                : html`<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.55 13c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.37-.66-.11-1.48-.87-1.48H5.21l-.94-2H1v2h2l3.6 7.59-1.35 2.44C5.18 13.55 5 13.76 5 14c0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45zM7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg> ${out ? 'Stokda yo\'q' : atCartLimit ? 'Maksimum savatda' : 'Savatga qo\'shish'}`}
             </button>
-          </div>`}
+          </div>
 
           <!-- Description -->
           ${p.description && html`<p className="detail-desc">${p.description}</p>`}
         </div>
       </div>
+
+      <!-- Similar products -->
+      ${similar.length > 0 && html`
+        <div className="detail-similar">
+          <div className="detail-similar-title">O'xshash mahsulotlar</div>
+          <div className="detail-similar-rail">
+            ${similar.map(sp => html`
+              <div className="detail-similar-item" key=${sp.id}>
+                <${ProductItem} p=${sp} onAdd=${onAdd} setQty=${setCartQty} cart=${cart} showImages=${showImages} onDetail=${onSelect}/>
+              </div>`)}
+          </div>
+        </div>`}
+      ${zoomOpen && p.image && !imageError && html`<${ImgLightbox}
+        src=${media(p.image)} alt=${p.name} onClose=${() => setZoomOpen(false)}/>`}
     </div>`
 }
 
@@ -1593,6 +1814,7 @@ function ProductDetail({ product, onClose, onAdd, onAddVariant, onAddSerial, onA
 function CategoryDrawer({ open, onClose, cats, selTop, selSub, onSelect, catImgs }) {
   const [q, setQ] = useState('')
   const [exp, setExp] = useState({})
+  const dialogRef = useDialogA11y(open, onClose)
   const ql = q.trim().toLowerCase()
   const childrenOf = id => cats.filter(c => c.parentId === id)
   const pick = (top, sub) => { onSelect(top, sub); onClose() }
@@ -1601,12 +1823,16 @@ function CategoryDrawer({ open, onClose, cats, selTop, selSub, onSelect, catImgs
   if (ql) tops = tops.filter(t => t.name.toLowerCase().includes(ql) || childrenOf(t.id).some(s => s.name.toLowerCase().includes(ql)))
 
   return html`<${React.Fragment}>
-    <div className=${'drawer-overlay'+(open?' open':'')} onClick=${onClose}></div>
-    <div className=${'cat-drawer'+(open?' open':'')}>
+    <div className=${'drawer-overlay'+(open?' open':'')} aria-hidden="true" onClick=${onClose}></div>
+    <div ref=${dialogRef} className=${'cat-drawer'+(open?' open':'')} role="dialog" aria-modal="true" aria-labelledby="catalog-title" tabIndex="-1">
       <div className="cat-drawer-head">
-        <h2>Katalog</h2>
+        <div style=${{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+          <h2 id="catalog-title" style=${{margin:0}}>Katalog</h2>
+          <button type="button" className="close-btn" aria-label="Katalogni yopish" onClick=${onClose}><${IX}/></button>
+        </div>
         <div className="cat-drawer-search">
-          <input value=${q} onInput=${e=>setQ(e.target.value)} placeholder="Bo'limlarni qidirish..."/>
+          <label className="sr-only" htmlFor="catalog-search">Bo'limlarni qidirish</label>
+          <input id="catalog-search" value=${q} onInput=${e=>setQ(e.target.value)} placeholder="Bo'limlarni qidirish..."/>
         </div>
       </div>
       <div className="cat-drawer-list">
@@ -1664,12 +1890,14 @@ function BottomNav({ active, count, cartIconRef, onHome, onSearch, onCart, onDra
       icon: html`<path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>` },
   ]
   return html`
-    <nav className="bottom-nav">
+    <nav className="bottom-nav" aria-label="Asosiy navigatsiya">
       ${items.map(it => html`
-        <button key=${it.id} ref=${it.ref||null}
+        <button type="button" key=${it.id}
+          aria-label=${it.label}
+          aria-current=${active===it.id?'page':undefined}
           className=${'nav-btn'+(active===it.id?' nav-active':'')}
           onClick=${it.onClick}>
-          <div className="nav-icon-wrap">
+          <div className="nav-icon-wrap" ref=${it.ref||null}>
             <svg viewBox="0 0 24 24" style=${{width:21,height:21,fill:'currentColor'}}>
               ${it.icon}
             </svg>
@@ -1681,6 +1909,43 @@ function BottomNav({ active, count, cartIconRef, onHome, onSearch, onCart, onDra
     </nav>`
 }
 
+// ── QuantityInput ───────────────────────────────────────────────────────
+// Keeps the text being typed locally, then applies a valid whole-number
+// quantity on blur or Enter. This lets a customer replace "1" with "10"
+// without the item disappearing while the field is temporarily empty.
+function QuantityInput({ value, max=Infinity, className, onCommit, allowDecimal=false, disabled=false }) {
+  const [draft, setDraft] = useState(String(fmtQty(value)))
+
+  useEffect(() => { setDraft(String(fmtQty(value))) }, [value])
+
+  const commit = () => {
+    const raw = draft.trim()
+    if (raw === '') { setDraft(String(fmtQty(value))); return }
+    const parsed = Number(raw)
+    if (!Number.isFinite(parsed)) { setDraft(String(fmtQty(value))); return }
+    const min = allowDecimal ? 0.001 : 1
+    const normalized = allowDecimal ? Math.round(parsed * 1000) / 1000 : Math.floor(parsed)
+    const next = Math.min(Math.max(min, normalized), max)
+    setDraft(String(fmtQty(next)))
+    if (next !== value) onCommit(next)
+  }
+
+  return html`<input
+    className=${className}
+    type="number"
+    inputMode=${allowDecimal ? 'decimal' : 'numeric'}
+    min=${allowDecimal ? '0.001' : '1'}
+    max=${Number.isFinite(max) ? max : undefined}
+    step=${allowDecimal ? '0.001' : '1'}
+    aria-label="Miqdor"
+    disabled=${disabled}
+    value=${draft}
+    onChange=${e => setDraft(e.target.value)}
+    onClick=${e => e.stopPropagation()}
+    onKeyDown=${e => { e.stopPropagation(); if (e.key === 'Enter') e.currentTarget.blur() }}
+    onBlur=${commit}/>`
+}
+
 // ── ProductItem ────────────────────────────────────────────────────────
 function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
   const hasVariants = !!(p.has_variants && p.variants?.length)
@@ -1690,13 +1955,18 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
     : p.units?.[0]
   const [unitId, setUnitId] = useState(_firstAvail?.unit_id ?? null)
   const [added, setAdded]   = useState(false)
+  const [zoomOpen, setZoomOpen] = useState(false)
+  const [imageError, setImageError] = useState(false)
   const addBtnRef = useRef(null)
+
+  useEffect(() => setImageError(false), [p.image])
 
   const unit   = !hasVariants ? (p.units?.find(u => u.unit_id === unitId) || p.units?.[0]) : null
   const mult   = unit?.multiplier || 1
+  const isWeight = isWeightUnit(unit?.unit_name)
   const maxQty = hasVariants
     ? (p.in_stock ? 1 : 0)
-    : (p.stock_type === 'tracked' ? Math.floor(p.stock / mult) : Infinity)
+    : (p.stock_type === 'tracked' ? (isWeight ? p.stock / mult : Math.floor(p.stock / mult)) : Infinity)
   const cartKey = p.id+'_'+(unit?.unit_id??'base')
   const inCart = !hasVariants ? (cart.find(x => x.key === cartKey)?.qty || 0) : 0
   const out    = hasVariants ? !p.in_stock : maxQty <= 0
@@ -1712,13 +1982,8 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
   const dispVal = hasVariants ? (p.variants[0]?.cur_price ?? displayPrice) : (unit?.cur_price ?? displayPrice)
   const dispOrigVal = hasVariants ? (p.variants[0]?.cur_original_price ?? null) : (unit?.cur_original_price ?? null)
 
-  // Telefon: karta = MODEL, narx eng arzon nusxadan. Savatga to'g'ridan-
-  // to'g'ri qo'shilmaydi — mijoz avval konfiguratsiya/nusxani tanlaydi.
-  const phone = p.phone && (p.phone.groups?.length || p.phone.buckets?.length) ? p.phone : null
-
   const handleAdd = (e) => {
     e.stopPropagation()
-    if (phone) { onDetail(p); return }
     if (out || added || hasVariants) return
     onAdd(p, unit, addBtnRef.current)
     setAdded(true)
@@ -1726,23 +1991,27 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
   }
 
   return html`
-    <div className="product-item fade-up" onClick=${()=>onDetail(p)}>
+    <article className="product-item fade-up" aria-label=${p.name}>
       <!-- Image -->
       <div className="product-img-wrap">
-        ${showImages && p.image
-          ? html`<img src=${media(p.image)} alt=${p.name} loading="lazy" onError=${e=>{e.target.style.display='none'}}/>`
-          : html`<${IBox} s=${48}/>`}
+        ${showImages && p.image && !imageError
+          ? html`<img src=${media(p.image)} alt=${p.name} loading="lazy" onError=${()=>setImageError(true)}/>`
+          : html`<div className="image-fallback"><${IBox} s=${48}/><span className="sr-only">Rasm mavjud emas</span></div>`}
+        <button type="button" className="product-image-open" aria-label=${p.name + ' tafsilotlarini ochish'} onClick=${()=>onDetail(p)}></button>
+        ${showImages && p.image && !imageError && html`
+          <button type="button" className="card-zoom-btn" aria-label=${p.name + ' rasmini kattalashtirish'}
+            onClick=${e=>{e.stopPropagation();setZoomOpen(true)}}><${IZoomIn} s=${15}/></button>`}
         ${out && html`<div className="stock-out-overlay"><span className="stock-out-tag">Tugadi</span></div>`}
         ${inCart > 0 && html`<div className="in-cart-dot">${inCart}</div>`}
       </div>
 
       <!-- Name -->
-      <div className="product-name clamp2">${p.name}</div>
+      <button type="button" className="product-title-btn" onClick=${()=>onDetail(p)}>
+        <span className="product-name clamp2">${p.name}</span>
+      </button>
 
       <!-- Meta: stock info -->
-      ${phone && !out && html`
-        <div className="product-meta">${p.stock} ta mavjud</div>`}
-      ${!phone && !hasVariants && p.stock_type === 'tracked' && !out && html`
+      ${!hasVariants && p.stock_type === 'tracked' && !out && html`
         <div className="product-meta">${maxQty} ${unit?.unit_name||'dona'} mavjud</div>`}
       ${out && html`<div className="product-meta" style=${{color:'#e53e3e'}}>Sotib bo'lindi</div>`}
       ${hasVariants && !out && html`
@@ -1750,15 +2019,13 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
 
       <!-- Price -->
       <div className="product-price">
-        ${!phone && dispOrigVal != null && html`<span className="price-orig-strike">${hasVariants ? 'dan '+money(dispOrigVal, dispCur) : money(dispOrigVal, dispCur)}</span>`}
-        ${phone
-          ? money(phone.from_cur_price ?? phone.from_price, phone.currency ?? '') + ' dan'
-          : (hasVariants ? 'dan '+money(dispVal, dispCur) : money(dispVal, dispCur))}
+        ${dispOrigVal != null && html`<span className="price-orig-strike">${hasVariants ? 'dan '+money(dispOrigVal, dispCur) : money(dispOrigVal, dispCur)}</span>`}
+        ${hasVariants ? 'dan '+money(dispVal, dispCur) : money(dispVal, dispCur)}
         ${p.discount_percent > 0 && html`<span className="disc-badge">−${Math.round(p.discount_percent)}%</span>`}
       </div>
 
       <!-- Unit selector (non-variant only) -->
-      ${!phone && !hasVariants && p.units?.length > 1 && html`
+      ${!hasVariants && p.units?.length > 1 && html`
         <div className="unit-row" onClick=${e=>e.stopPropagation()}>
           <span className="unit-label">Birlik:</span>
           <div className="unit-select-wrap">
@@ -1772,7 +2039,7 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
       <!-- Controls -->
       <div className="controls-row" onClick=${e=>e.stopPropagation()}>
         ${hasVariants
-          ? html`<button className="add-btn" style=${{flex:1}} onClick=${e=>{e.stopPropagation();onDetail(p)}}
+          ? html`<button type="button" className="add-btn" style=${{flex:1}} onClick=${e=>{e.stopPropagation();onDetail(p)}}
               disabled=${out}>
               ${out ? 'Tugadi' : 'Tanlang'}
             </button>`
@@ -1780,17 +2047,21 @@ function ProductItem({ p, onAdd, setQty, cart, showImages, onDetail }) {
             // Savatda bo'lsa — Uzumdek +/- stepper (cart qty'ni boshqaradi)
             ? html`
               <div className="qty-wrap">
-                <button className="qty-btn" onClick=${e=>{e.stopPropagation();setQty(cartKey, inCart-1)}}>−</button>
-                <span className="qty-num">${fmtQty(inCart)}</span>
-                <button className="qty-btn" onClick=${e=>{e.stopPropagation(); if(maxQty===Infinity||inCart<maxQty) onAdd(p, unit, addBtnRef.current)}}>+</button>
+                <button type="button" className="qty-btn" aria-label="Miqdorni kamaytirish" onClick=${e=>{e.stopPropagation();setQty(cartKey, inCart-1)}}>−</button>
+                <${QuantityInput} className="qty-num" value=${inCart} max=${maxQty} allowDecimal=${isWeight}
+                  onCommit=${qty=>setQty(cartKey, qty)}/>
+                <button type="button" className="qty-btn" aria-label="Miqdorni oshirish" onClick=${e=>{e.stopPropagation(); if(maxQty===Infinity||inCart<maxQty) onAdd(p, unit, addBtnRef.current)}}>+</button>
               </div>`
             // Savatda yo'q — bitta "Savatga" tugmasi
             : html`
-              <button ref=${addBtnRef} className=${'add-btn'+(out?' btn-tugadi':added?' btn-added':'')} style=${{flex:1}} onClick=${handleAdd} disabled=${out}>
+              <button type="button" ref=${addBtnRef} className=${'add-btn'+(out?' btn-tugadi':added?' btn-added':'')} style=${{flex:1}} onClick=${handleAdd} disabled=${out}>
                 ${out ? 'Tugadi' : added ? '✓' : 'Savatga'}
               </button>`}
       </div>
-    </div>`
+
+      ${zoomOpen && p.image && !imageError && html`<${ImgLightbox}
+        src=${media(p.image)} alt=${p.name} onClose=${() => setZoomOpen(false)}/>`}
+    </article>`
 }
 
 // ── Skeleton ────────────────────────────────────────────────────────────
@@ -1810,19 +2081,20 @@ function Skeleton() {
 
 // ── CartSheet ────────────────────────────────────────────────────────────
 function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) {
+  const dialogRef = useDialogA11y(open, onClose)
   if (!open) return null
   const count = items.reduce((s,i)=>s+i.qty,0)
   return html`
     <div className="overlay-bg fade-in">
-      <div className="overlay-dim" onClick=${onClose}></div>
-      <div className="cart-sheet-new slide-up">
+      <div className="overlay-dim" aria-hidden="true" onClick=${onClose}></div>
+      <div ref=${dialogRef} className="cart-sheet-new slide-up" role="dialog" aria-modal="true" aria-labelledby="cart-title" tabIndex="-1">
         <div className="cart-handle"></div>
         <div className="cart-head-new">
           <div style=${{display:'flex',alignItems:'center'}}>
-            <span className="cart-title-new">Savatcha</span>
+            <span className="cart-title-new" id="cart-title">Savatcha</span>
             ${count>0 && html`<span className="cart-count-chip">${count} ta</span>`}
           </div>
-          <button className="close-btn" onClick=${onClose}><${IX}/></button>
+          <button type="button" className="close-btn" aria-label="Savatchani yopish" onClick=${onClose}><${IX}/></button>
         </div>
 
         <div className="cart-items-list">
@@ -1837,31 +2109,29 @@ function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) 
                 <div className="cart-item-new">
                   <div className="cart-thumb-new">
                     ${it.image
-                      ? html`<img src=${media(it.image)} alt=${it.name}/>`
+                      ? html`<${SafeImage} src=${media(it.image)} alt=${it.name} fallbackSize=${28}/>`
                       : html`<${IBox} s=${28}/>`}
                   </div>
                   <div className="cart-info-new">
                     <div className="cart-name-new clamp2">${it.name}${it.variant_name ? ' · '+it.variant_name : ''}</div>
-                    ${it.imei && html`<div className="cart-item-imei">${it.imei}</div>`}
-                    ${it.spec_label && html`<div className="cart-item-imei">${it.spec_label}</div>`}
                     <div className="cart-price-new">${it.currency==='USD' && it.cur_price!=null ? money(it.cur_price*it.qty, it.currency) : som(it.price*it.qty)}</div>
                     <div className="cart-unit-new">${it.currency==='USD' && it.cur_price!=null ? money(it.cur_price, it.currency) : som(it.price)} × ${fmtQty(it.qty)} ${it.unit_name}</div>
                   </div>
                   ${it.weight
                     ? html`<div className="cart-qty-ctrl">
-                        <input type="number" step="0.001" min="0" className="cart-qty-input"
-                          defaultValue=${it.qty}
-                          onChange=${e=>setQty(it.key, +e.target.value||0)}/>
+                        <${QuantityInput} className="cart-qty-input" value=${it.qty} max=${it.maxQty} allowDecimal=${true}
+                          onCommit=${qty=>setQty(it.key,qty)}/>
                         <span className="cqu">${it.unit_name}</span>
-                        <button className="cqb cqb-del" onClick=${()=>remove(it.key)}><${IX} s=${12}/></button>
+                        <button type="button" className="cqb cqb-del" aria-label=${it.name+' mahsulotini o‘chirish'} onClick=${()=>remove(it.key)}><${IX} s=${12}/></button>
                       </div>`
                     : html`<div className="cart-qty-ctrl">
-                        <button className=${'cqb'+(it.qty===1?' cqb-del':'')}
+                        <button type="button" className=${'cqb'+(it.qty===1?' cqb-del':'')} aria-label=${it.qty===1?'Mahsulotni o‘chirish':'Miqdorni kamaytirish'}
                           onClick=${()=>it.qty===1?remove(it.key):setQty(it.key,it.qty-1)}>
                           ${it.qty===1?html`<${IX} s=${12}/>`:html`−`}
                         </button>
-                        <span className="cqn">${it.qty}</span>
-                        <button className="cqb" onClick=${()=>setQty(it.key,it.qty+1)}>+</button>
+                        <${QuantityInput} className="cqn" value=${it.qty} max=${it.maxQty}
+                          onCommit=${qty=>setQty(it.key,qty)}/>
+                        <button type="button" className="cqb" aria-label="Miqdorni oshirish" onClick=${()=>setQty(it.key,it.qty+1)}>+</button>
                       </div>`}
                 </div>
                 ${idx < items.length-1 && html`<div className="cart-divider"></div>`}
@@ -1874,7 +2144,7 @@ function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) 
             <span className="cart-total-lbl">Jami summa</span>
             <span className="cart-total-val">${groupTotal(items)}</span>
           </div>
-          <button className="cart-checkout-btn" disabled=${items.length===0}
+          <button type="button" className="cart-checkout-btn" disabled=${items.length===0}
             onClick=${()=>{onClose();onCheckout()}}>
             Buyurtma berish
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -1888,28 +2158,43 @@ function CartSheet({ open, onClose, items, setQty, remove, total, onCheckout }) 
 function MapPicker({ open, initial, onPick, onClose }) {
   const boxRef = useRef(null)
   const mapRef = useRef(null)
+  const dialogRef = useDialogA11y(open, onClose)
   const ctrRef = useRef(initial && initial.lat != null ? initial : { lat:41.311081, lng:69.240562 })
   const [addr, setAddr] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [mapError, setMapError] = useState('')
 
   useEffect(() => {
-    if (!open || !window.L || !boxRef.current) return
-    const L = window.L
-    const c = ctrRef.current
-    const map = L.map(boxRef.current, { attributionControl:false }).setView([c.lat, c.lng], 16)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map)
-    mapRef.current = map
+    if (!open) return
+    let disposed = false
+    let map = null
     let t
-    const resolve = async () => {
-      const p = map.getCenter()
-      ctrRef.current = { lat:p.lat, lng:p.lng }
-      setLoading(true)
-      const a = await reverseGeocode(p.lat, p.lng)
-      setAddr(a); setLoading(false)
+    let initTimer
+    setMapError('')
+    setLoading(true)
+    loadLeaflet().then(L => {
+      if (disposed || !boxRef.current) return
+      const c = ctrRef.current
+      map = L.map(boxRef.current, { attributionControl:false }).setView([c.lat, c.lng], 16)
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map)
+      mapRef.current = map
+      const resolve = async () => {
+        const p = map.getCenter()
+        ctrRef.current = { lat:p.lat, lng:p.lng }
+        setLoading(true)
+        const a = await reverseGeocode(p.lat, p.lng)
+        if (!disposed) { setAddr(a); setLoading(false) }
+      }
+      map.on('moveend', () => { clearTimeout(t); t = setTimeout(resolve, 350) })
+      initTimer = setTimeout(() => { map.invalidateSize(); resolve() }, 120)
+    }).catch(e => {
+      if (!disposed) { setMapError(e.message); setLoading(false) }
+    })
+    return () => {
+      disposed = true; clearTimeout(t); clearTimeout(initTimer)
+      if (map) map.remove()
+      mapRef.current = null
     }
-    map.on('moveend', () => { clearTimeout(t); t = setTimeout(resolve, 350) })
-    setTimeout(() => { map.invalidateSize(); resolve() }, 120)
-    return () => { clearTimeout(t); map.remove(); mapRef.current = null }
   }, [open])
 
   if (!open) return null
@@ -1920,15 +2205,19 @@ function MapPicker({ open, initial, onPick, onClose }) {
       () => {}, { enableHighAccuracy:true, timeout:15000 })
   }
   return html`
-    <div style=${{position:'fixed',inset:0,zIndex:1000,background:'#000'}}>
+    <div ref=${dialogRef} role="dialog" aria-modal="true" aria-labelledby="map-title" tabIndex="-1"
+      style=${{position:'fixed',inset:0,zIndex:1000,background:'#000'}}>
+      <h2 id="map-title" className="sr-only">Yetkazish joyini xaritadan tanlash</h2>
       <div ref=${boxRef} style=${{position:'absolute',inset:0}}></div>
-      <div style=${{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-100%)',pointerEvents:'none',fontSize:42,zIndex:500}}>📍</div>
-      <button onClick=${onClose} style=${{position:'absolute',top:16,left:16,zIndex:600,width:44,height:44,borderRadius:22,border:'none',background:'#fff',fontSize:18,cursor:'pointer',boxShadow:'0 2px 10px rgba(0,0,0,.3)'}}>✕</button>
-      <button onClick=${locate} style=${{position:'absolute',right:16,bottom:190,zIndex:600,width:46,height:46,borderRadius:23,border:'none',background:'#fff',fontSize:20,cursor:'pointer',boxShadow:'0 2px 10px rgba(0,0,0,.3)'}}>🎯</button>
+      ${mapError && html`<div className="err-box" role="alert" style=${{position:'absolute',top:76,left:16,right:16,zIndex:650,maxWidth:420,margin:'0 auto'}}>${mapError}. Internet aloqasini tekshirib, qayta oching.</div>`}
+      <div style=${{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-100%)',pointerEvents:'none',zIndex:500,color:'#e0362a'}}><${IPin} s=${38}/></div>
+      <button type="button" aria-label="Xaritani yopish" onClick=${onClose} style=${{position:'absolute',top:16,left:16,zIndex:600,width:44,height:44,borderRadius:22,border:'none',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',boxShadow:'0 2px 10px rgba(0,0,0,.3)'}}><${IX} s=${18}/></button>
+      <button type="button" aria-label="Joriy joylashuvimni ko'rsatish" onClick=${locate} style=${{position:'absolute',right:16,bottom:190,zIndex:600,width:46,height:46,borderRadius:23,border:'none',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',boxShadow:'0 2px 10px rgba(0,0,0,.3)'}}><${ICrosshair} s=${20}/></button>
       <div style=${{position:'absolute',left:0,right:0,bottom:0,background:'#fff',borderRadius:'18px 18px 0 0',padding:'18px 20px calc(18px + env(safe-area-inset-bottom))',zIndex:600}}>
         <div style=${{fontSize:11,fontWeight:700,color:'#888',letterSpacing:.6,marginBottom:8}}>TANLANGAN JOY</div>
         <div style=${{background:'#f4f4f4',borderRadius:12,padding:14,fontSize:14,fontWeight:700,color:'#222',marginBottom:14,lineHeight:1.4}}>${loading ? 'Aniqlanmoqda...' : (addr || 'Manzil aniqlanmadi (koordinata saqlanadi)')}</div>
-        <button onClick=${()=>onPick(ctrRef.current.lat, ctrRef.current.lng, addr)} style=${{width:'100%',height:52,border:'none',borderRadius:14,background:ACCENT,color:'#fff',fontSize:16,fontWeight:800,cursor:'pointer'}}>Shu yerni tanlash</button>
+        <button type="button" onClick=${()=>onPick(ctrRef.current.lat, ctrRef.current.lng, addr)} disabled=${!!mapError}
+          style=${{width:'100%',height:52,border:'none',borderRadius:14,background:mapError?'#ccc':ACCENT,color:'#fff',fontSize:16,fontWeight:800,cursor:mapError?'not-allowed':'pointer'}}>Shu yerni tanlash</button>
       </div>
     </div>`
 }
@@ -1947,6 +2236,26 @@ function Checkout({ open, onClose, total, totalStr, onSubmit, submitting, custom
   const [mapOpen, setMapOpen] = useState(false)
   const [err, setErr] = useState('')
   const courier = delivery === 'courier'
+  const dialogRef = useDialogA11y(open, onClose)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    const fallbackName = customer?.name || customer?.customer_name || ''
+    const fallbackPhone = customer?.phone || customer?.phone_number || ''
+    setName(fallbackName); setPhone(fallbackPhone); setErr('')
+    if (customer?.customer_code) {
+      api('/storefront/customer/?code='+encodeURIComponent(customer.customer_code))
+        .then(data => {
+          if (cancelled) return
+          const profile = data?.customer || data || {}
+          setName(profile.name || profile.customer_name || fallbackName)
+          setPhone(profile.phone || profile.phone_number || fallbackPhone)
+        }).catch(() => {})
+    }
+    return () => { cancelled = true }
+  }, [open, customer?.customer_code, customer?.name, customer?.phone])
+
   if (!open) return null
 
   const locateMe = () => {
@@ -1971,20 +2280,20 @@ function Checkout({ open, onClose, total, totalStr, onSubmit, submitting, custom
     })
   }
 
-  const seg = (v,label) => html`<button onClick=${()=>setDelivery(v)} style=${{flex:1,height:48,borderRadius:12,border:'1.5px solid '+(delivery===v?ACCENT:'rgba(150,150,150,.35)'),background:delivery===v?ACCENT:'transparent',color:delivery===v?'#fff':'inherit',fontSize:15,fontWeight:600,cursor:'pointer'}}>${label}</button>`
-  const payCard = (v,title,sub) => html`<button onClick=${()=>setPayment(v)} style=${{display:'flex',alignItems:'center',gap:12,width:'100%',textAlign:'left',padding:14,borderRadius:12,border:(payment===v?'2px solid '+ACCENT:'1.5px solid rgba(150,150,150,.3)'),background:'transparent',color:'inherit',cursor:'pointer'}}>
+  const seg = (v,label) => html`<button type="button" aria-pressed=${delivery===v} onClick=${()=>setDelivery(v)} style=${{flex:1,height:48,borderRadius:12,border:'1.5px solid '+(delivery===v?ACCENT:'rgba(150,150,150,.35)'),background:delivery===v?ACCENT:'transparent',color:delivery===v?'#fff':'inherit',fontSize:15,fontWeight:600,cursor:'pointer'}}>${label}</button>`
+  const payCard = (v,title,sub) => html`<button type="button" aria-pressed=${payment===v} onClick=${()=>setPayment(v)} style=${{display:'flex',alignItems:'center',gap:12,width:'100%',textAlign:'left',padding:14,borderRadius:12,border:(payment===v?'2px solid '+ACCENT:'1.5px solid rgba(150,150,150,.3)'),background:'transparent',color:'inherit',cursor:'pointer'}}>
     <div style=${{flex:1}}><div style=${{fontSize:15,fontWeight:600}}>${title}</div><div style=${{fontSize:12,color:'rgba(150,150,150,.95)',marginTop:2}}>${sub}</div></div>
     <div style=${{width:20,height:20,borderRadius:10,border:'2px solid '+(payment===v?ACCENT:'rgba(150,150,150,.5)'),background:payment===v?ACCENT:'transparent',flexShrink:0}}></div>
   </button>`
 
   return html`
     <div className="overlay-bg fade-in">
-      <div className="overlay-dim" onClick=${onClose}></div>
-      <div className="bottom-sheet slide-up" style=${{maxWidth:560,margin:'0 auto'}}>
+      <div className="overlay-dim" aria-hidden="true" onClick=${onClose}></div>
+      <div ref=${dialogRef} className="bottom-sheet slide-up" role="dialog" aria-modal="true" aria-labelledby="checkout-title" tabIndex="-1" style=${{maxWidth:560,margin:'0 auto'}}>
         <div className="sheet-handle"></div>
         <div className="sheet-header">
-          <div className="sheet-title">Buyurtmani rasmiylashtirish</div>
-          <button className="close-btn" onClick=${onClose}><${IX}/></button>
+          <div className="sheet-title" id="checkout-title">Buyurtmani rasmiylashtirish</div>
+          <button type="button" className="close-btn" aria-label="Buyurtma oynasini yopish" onClick=${onClose}><${IX}/></button>
         </div>
         <div style=${{padding:'0 20px 36px',display:'flex',flexDirection:'column',gap:14,marginTop:8,flex:1,overflowY:'auto',minHeight:0}}>
 
@@ -1995,16 +2304,16 @@ function Checkout({ open, onClose, total, totalStr, onSubmit, submitting, custom
 
           ${courier && html`
             <div className="form-field">
-              <label className="form-label">Manzil</label>
-              <input className="form-input" value=${address} onInput=${e=>setAddress(e.target.value)} placeholder="Ko'cha, uy, xonadon"/>
+              <label className="form-label" htmlFor="checkout-address">Manzil</label>
+              <input id="checkout-address" className="form-input" value=${address} onInput=${e=>setAddress(e.target.value)} placeholder="Ko'cha, uy, xonadon"/>
             </div>
             <div className="form-field">
-              <label className="form-label">Mo'ljal (ixtiyoriy)</label>
-              <input className="form-input" value=${landmark} onInput=${e=>setLandmark(e.target.value)} placeholder="Masalan: maktab yonida"/>
+              <label className="form-label" htmlFor="checkout-landmark">Mo'ljal (ixtiyoriy)</label>
+              <input id="checkout-landmark" className="form-input" value=${landmark} onInput=${e=>setLandmark(e.target.value)} placeholder="Masalan: maktab yonida"/>
             </div>
             <div style=${{display:'flex',gap:10}}>
-              <button onClick=${locateMe} disabled=${locating} style=${{flex:1,height:46,borderRadius:12,border:'1.5px solid rgba(150,150,150,.35)',background:'transparent',color:'inherit',fontSize:14,fontWeight:700,cursor:'pointer'}}>${locating?'Aniqlanmoqda...':'📍 Meni topish'}</button>
-              <button onClick=${()=>setMapOpen(true)} style=${{flex:1,height:46,borderRadius:12,border:'1.5px solid '+(lat!=null?ACCENT:'rgba(150,150,150,.35)'),background:lat!=null?ACCENT:'transparent',color:lat!=null?'#fff':'inherit',fontSize:14,fontWeight:700,cursor:'pointer'}}>🗺️ Xaritadan belgilash</button>
+              <button type="button" onClick=${locateMe} disabled=${locating} style=${{flex:1,height:46,borderRadius:12,border:'1.5px solid rgba(150,150,150,.35)',background:'transparent',color:'inherit',fontSize:14,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>${locating?'Aniqlanmoqda...':html`<${IPin} s=${16}/> Meni topish`}</button>
+              <button type="button" onClick=${()=>setMapOpen(true)} style=${{flex:1,height:46,borderRadius:12,border:'1.5px solid '+(lat!=null?ACCENT:'rgba(150,150,150,.35)'),background:lat!=null?ACCENT:'transparent',color:lat!=null?'#fff':'inherit',fontSize:14,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><${IMapIcon} s=${16}/> Xaritadan belgilash</button>
             </div>
             ${lat!=null && html`<div style=${{fontSize:12,color:'#16a34a',fontWeight:700,marginTop:-4}}>✓ Joylashuv belgilandi</div>`}
           `}
@@ -2018,22 +2327,22 @@ function Checkout({ open, onClose, total, totalStr, onSubmit, submitting, custom
           </div>
 
           <div className="form-field">
-            <label className="form-label">Ismingiz</label>
-            <input className="form-input" value=${name} onInput=${e=>setName(e.target.value)} placeholder="Ism Familiya"/>
+            <label className="form-label" htmlFor="checkout-name">Ismingiz</label>
+            <input id="checkout-name" className="form-input" autoComplete="name" value=${name} onInput=${e=>setName(e.target.value)} placeholder="Ism Familiya"/>
           </div>
           <div className="form-field">
-            <label className="form-label">Telefon raqam</label>
-            <input className="form-input" type="tel" value=${phone} onInput=${e=>setPhone(e.target.value)} placeholder="+998 90 000 00 00"/>
+            <label className="form-label" htmlFor="checkout-phone">Telefon raqam</label>
+            <input id="checkout-phone" className="form-input" type="tel" autoComplete="tel" value=${phone} onInput=${e=>setPhone(e.target.value)} placeholder="+998 90 000 00 00"/>
           </div>
 
-          ${err && html`<div className="err-box">${err}</div>`}
+          ${err && html`<div className="err-box" role="alert">${err}</div>`}
         </div>
         <div style=${{padding:'12px 20px calc(16px + env(safe-area-inset-bottom))',borderTop:'1px solid rgba(150,150,150,.2)',flexShrink:0,background:'inherit'}}>
           <div className="total-row" style=${{marginBottom:12}}>
             <span className="total-label">Jami</span>
             <span className="total-val">${totalStr || som(total)}</span>
           </div>
-          <button className="primary-btn" onClick=${go} disabled=${submitting}>
+          <button type="button" className="primary-btn" onClick=${go} disabled=${submitting}>
             ${submitting ? 'Yuborilmoqda...' : 'Buyurtmani tasdiqlash'}
           </button>
         </div>
@@ -2049,6 +2358,7 @@ function Login({ open, onClose, onLogin }) {
   const [code, setCode] = useState('')
   const [err,  setErr]  = useState('')
   const [busy, setBusy] = useState(false)
+  const dialogRef = useDialogA11y(open, onClose)
   if (!open) return null
   const go = async () => {
     if (!code.trim()) { setErr('ID kiriting'); return }
@@ -2058,18 +2368,19 @@ function Login({ open, onClose, onLogin }) {
   }
   return html`
     <div className="modal-center fade-in">
-      <div className="modal-card pop-in">
+      <div ref=${dialogRef} className="modal-card pop-in" role="dialog" aria-modal="true" aria-labelledby="login-title" tabIndex="-1">
         <div style=${{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-          <div style=${{fontWeight:700,fontSize:17,color:'#111'}}>Mijoz sifatida kirish</div>
-          <button className="close-btn" onClick=${onClose}><${IX}/></button>
+          <div id="login-title" style=${{fontWeight:700,fontSize:17,color:'#111'}}>Mijoz sifatida kirish</div>
+          <button type="button" className="close-btn" aria-label="Kirish oynasini yopish" onClick=${onClose}><${IX}/></button>
         </div>
         <p style=${{fontSize:13,color:'#aaa',marginBottom:20,textAlign:'left'}}>Do'kondan olgan ID raqamingizni kiriting</p>
-        <input value=${code} onInput=${e=>setCode(e.target.value.toUpperCase())}
+        <label className="sr-only" htmlFor="customer-code">Mijoz ID raqami</label>
+        <input id="customer-code" autoComplete="off" value=${code} onInput=${e=>setCode(e.target.value.toUpperCase())}
           onKeyDown=${e=>e.key==='Enter'&&go()}
           placeholder="CUST-XXXXXX"
           style=${{width:'100%',height:48,border:'1.5px solid #e5e5e5',borderRadius:10,paddingLeft:14,fontSize:15,fontFamily:'monospace',letterSpacing:2,color:'#111',background:'#fafafa',marginBottom:err?10:0}}/>
-        ${err && html`<div className="err-box" style=${{marginBottom:10}}>${err}</div>`}
-        <button className="primary-btn" style=${{marginTop:12}} onClick=${go} disabled=${busy}>
+        ${err && html`<div className="err-box" role="alert" style=${{marginBottom:10}}>${err}</div>`}
+        <button type="button" className="primary-btn" style=${{marginTop:12}} onClick=${go} disabled=${busy}>
           ${busy ? 'Tekshirilmoqda...' : 'Kirish'}
         </button>
       </div>
@@ -2078,15 +2389,16 @@ function Login({ open, onClose, onLogin }) {
 
 // ── Success ────────────────────────────────────────────────────────────────
 function Success({ order, onClose }) {
+  const dialogRef = useDialogA11y(true, onClose)
   return html`
     <div className="modal-center fade-in">
-      <div className="modal-card pop-in">
+      <div ref=${dialogRef} className="modal-card pop-in" role="alertdialog" aria-modal="true" aria-labelledby="success-title" tabIndex="-1">
         <div className="success-icon">✅</div>
-        <div style=${{fontWeight:800,fontSize:20,color:'#111',marginBottom:8}}>Buyurtma qabul qilindi!</div>
+        <div id="success-title" style=${{fontWeight:800,fontSize:20,color:'#111',marginBottom:8}}>Buyurtma qabul qilindi!</div>
         <div style=${{color:'#aaa',fontSize:13,marginBottom:4}}>Buyurtma raqami</div>
         <div style=${{fontWeight:800,fontSize:20,color:AD,marginBottom:8}}>${order.order_no}</div>
         <div style=${{color:'#bbb',fontSize:13,marginBottom:28}}>Do'kon tez orada siz bilan bog'lanadi</div>
-        <button className="dark-btn" onClick=${onClose}>Xaridni davom ettirish</button>
+        <button type="button" className="dark-btn" onClick=${onClose}>Xaridni davom ettirish</button>
       </div>
     </div>`
 }
@@ -2098,6 +2410,7 @@ function CustomerPortal({ open, onClose, customer, onLogout }) {
   const [err,     setErr]   = useState('')
   const [tab,     setTab]   = useState('profile')
   const [openSale, setOpenSale] = useState(null)
+  const dialogRef = useDialogA11y(open, onClose)
 
   useEffect(() => {
     if (!open||!customer) return
@@ -2132,29 +2445,29 @@ function CustomerPortal({ open, onClose, customer, onLogout }) {
 
   return html`
     <div className="overlay-bg fade-in">
-      <div className="overlay-dim" onClick=${onClose}></div>
-      <div className="portal-sheet slide-up">
+      <div className="overlay-dim" aria-hidden="true" onClick=${onClose}></div>
+      <div ref=${dialogRef} className="portal-sheet slide-up" role="dialog" aria-modal="true" aria-labelledby="portal-title" tabIndex="-1">
         <div className="portal-handle"></div>
 
         <!-- Header -->
         <div className="portal-head">
-          <span className="portal-title">Mening hisobim</span>
+          <span className="portal-title" id="portal-title">Mening hisobim</span>
           <div style=${{display:'flex',gap:8,alignItems:'center'}}>
-            <button className="portal-logout" onClick=${()=>{onLogout();onClose()}}>Chiqish</button>
-            <button className="close-btn" onClick=${onClose}><${IX}/></button>
+            <button type="button" className="portal-logout" onClick=${()=>{onLogout();onClose()}}>Chiqish</button>
+            <button type="button" className="close-btn" aria-label="Hisob oynasini yopish" onClick=${onClose}><${IX}/></button>
           </div>
         </div>
 
         <!-- Tabs -->
-        <div className="portal-tabs">
+        <div className="portal-tabs" role="tablist" aria-label="Hisob bo‘limlari">
           ${TABS.map(t => html`
-            <button key=${t.k} className=${'portal-tab'+(tab===t.k?' active':'')} onClick=${()=>setTab(t.k)}>
+            <button type="button" key=${t.k} role="tab" aria-selected=${tab===t.k} className=${'portal-tab'+(tab===t.k?' active':'')} onClick=${()=>setTab(t.k)}>
               ${t.l}
             </button>`)}
         </div>
 
         <!-- Body -->
-        <div className="portal-body">
+        <div className="portal-body" role="tabpanel">
           ${loading && html`<div className="portal-loading">Yuklanmoqda...</div>`}
           ${err && html`<div className="err-box">${err}</div>`}
 
@@ -2298,25 +2611,36 @@ function BannerCarousel({ banners }) {
           ${banners.map((b,i) => {
             const src = typeof b === 'string' ? b : (b.image || b.url || b.photo)
             const title = typeof b === 'string' ? '' : (b.title || '')
-            return html`<div key=${i} className="banner-slide">
+            const align = typeof b === 'string' ? 'left' : (b.align || 'left')
+            return html`<div key=${i} className=${'banner-slide'+(align==='right'?' banner-align-right':'')}>
               <img src=${media(src)} alt=${title} loading=${i===0?'eager':'lazy'}/>
-              ${title && html`<div className="banner-title">${title}</div>`}
+              ${title && html`<div className=${'banner-title '+align}>${title}</div>`}
             </div>`
           })}
         </div>
         ${n > 1 && html`<${React.Fragment}>
-          <button className="banner-arrow prev" onClick=${()=>go(-1)} aria-label="Oldingi banner">
+          <button type="button" className="banner-arrow prev" onClick=${()=>go(-1)} aria-label="Oldingi banner">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <button className="banner-arrow next" onClick=${()=>go(1)} aria-label="Keyingi banner">
+          <button type="button" className="banner-arrow next" onClick=${()=>go(1)} aria-label="Keyingi banner">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
           <div className="banner-dots">
-            ${banners.map((_,i) => html`<button key=${i} className=${'banner-dot'+(i===idx?' active':'')} onClick=${()=>setIdx(i)} aria-label=${'Banner '+(i+1)}></button>`)}
+            ${banners.map((_,i) => html`<button type="button" key=${i} className=${'banner-dot'+(i===idx?' active':'')} onClick=${()=>setIdx(i)} aria-label=${'Banner '+(i+1)}></button>`)}
           </div>
         </${React.Fragment}>`}
       </div>
     </div>`
+}
+
+const CART_STORAGE_KEY = 'sf_cart_v1'
+const readStoredCart = () => {
+  try {
+    const value = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]')
+    if (!Array.isArray(value)) return []
+    return value.filter(it => it && typeof it.key === 'string' && Number(it.qty) > 0)
+      .map(it => ({ ...it, qty: Number(it.qty) }))
+  } catch { return [] }
 }
 
 function App() {
@@ -2328,12 +2652,13 @@ function App() {
   const [catImgs,   setCatImgs]  = useState({})
   const [loading,   setLoad]     = useState(true)
   const [error,     setErr]      = useState('')
+  const [reloadKey, setReloadKey]= useState(0)
 
   const [search,    setSearch]   = useState('')
   const [selTop,    setSelTop]   = useState(null)
   const [selSub,    setSelSub]   = useState(null)
 
-  const [cart,      setCart]     = useState([])
+  const [cart,      setCart]     = useState(readStoredCart)
   const [cartOpen,  setCartOpen] = useState(false)
   const [chkOpen,   setChkOpen]  = useState(false)
   const [subbing,   setSubbing]  = useState(false)
@@ -2378,8 +2703,10 @@ function App() {
   const toggleSubDropdown = (catId, chipEl) => {
     setSubDropdown(sd => {
       if (sd && sd.catId === catId) return null
+      if (!chipEl) return null
       const rect = chipEl.getBoundingClientRect()
-      return { catId, top: rect.bottom + 8, left: rect.left }
+      const left = Math.max(12, Math.min(rect.left, window.innerWidth - 232))
+      return { catId, top: rect.bottom + 8, left }
     })
   }
 
@@ -2411,15 +2738,19 @@ function App() {
   // o'shalar ko'rsatiladi, hali hech narsa yuklanmagan bo'lsa — namuna rasmlar.
   const banners = useMemo(() => {
     const fromApi = (info?.banners || [])
-      .map(b => typeof b === 'string' ? b : (b.image_url || b.image || b.url || b.photo || b.file))
-      .filter(Boolean).map(media)
+      .map(b => typeof b === 'string'
+        ? { image:media(b), title:'', align:'left' }
+        : { image:media(b.image_url || b.image || b.url || b.photo || b.file), title:b.title || '', align:b.align === 'right' ? 'right' : 'left' })
+      .filter(b => b.image)
     return fromApi.length ? fromApi : DEMO_BANNERS
   }, [info])
 
   useEffect(() => {
-    setLoad(true)
-    const q = customer ? '?customer_code='+encodeURIComponent(customer.customer_code) : ''
+    let cancelled = false
+    setLoad(true); setErr('')
+    const q = customer?.customer_code ? '?customer_code='+encodeURIComponent(customer.customer_code) : ''
     api('/storefront/products/'+q).then(r => {
+      if (cancelled) return
       const list = r.results || []
       setProds(list)
       setShowImg(r.show_images !== false)
@@ -2432,19 +2763,48 @@ function App() {
           map.set(p.category_parent_id, {id:p.category_parent_id, name:p.category_parent_name, parentId:null})
       })
       setCats([...map.values()])
-    }).catch(e=>setErr(e.message)).finally(()=>setLoad(false))
-  }, [customer])
+    }).catch(e=>{ if(!cancelled)setErr(e.message) }).finally(()=>{ if(!cancelled)setLoad(false) })
+    return () => { cancelled = true }
+  }, [customer, reloadKey])
+
+  useEffect(() => {
+    try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart)) } catch {}
+  }, [cart])
+
+  // Saqlangan savatni hozirgi narx va qoldiq bilan qayta tekshiramiz.
+  useEffect(() => {
+    if (!products.length) return
+    const byId = new Map(products.map(p => [p.id, p]))
+    setCart(items => items.map(it => {
+      const p = byId.get(it.product_id)
+      if (!p) return null
+      if (it.variant_id) {
+        const v = p.variants?.find(x => x.id === it.variant_id)
+        if (!v || !v.in_stock) return null
+        const maxQty = v.stock != null ? Math.floor(v.stock) : 9999
+        if (maxQty <= 0) return null
+        return { ...it, name:p.name, variant_name:v.name, price:v.price, currency:v.currency||'', cur_price:v.cur_price, image:p.image, maxQty, qty:Math.min(it.qty,maxQty) }
+      }
+      const unit = p.units?.find(u => u.unit_id === it.unit_id) || p.units?.[0]
+      if (!unit) return null
+      const mult = unit.multiplier || 1
+      const weight = isWeightUnit(unit.unit_name)
+      const maxQty = p.stock_type === 'tracked' ? (weight ? p.stock / mult : Math.floor(p.stock / mult)) : 9999
+      if (maxQty <= 0) return null
+      return { ...it, unit_id:unit.unit_id, unit_name:unit.unit_name||'dona', weight, name:p.name, price:unit.price, currency:unit.currency||'', cur_price:unit.cur_price, image:p.image, maxQty, qty:Math.min(it.qty,maxQty) }
+    }).filter(Boolean))
+  }, [products])
 
   useEffect(() => { if (srchOpen && searchRef.current) searchRef.current.focus() }, [srchOpen])
 
-  const doLogin = c => { setCust(c); localStorage.setItem('sf_cust',JSON.stringify(c)); setLoginOpen(false) }
-  const logout  = () => { setCust(null); localStorage.removeItem('sf_cust') }
+  const doLogin = c => { setCust(c); try{localStorage.setItem('sf_cust',JSON.stringify(c))}catch{} setLoginOpen(false) }
+  const logout  = () => { setCust(null); try{localStorage.removeItem('sf_cust')}catch{} }
 
   // Top ID'larni yuklangan mahsulot obyektlariga bog'laymiz (rank tartibi saqlanadi)
   const topProducts = useMemo(() => {
     if (!topIds.length || !products.length) return []
     const byId = new Map(products.map(p => [p.id, p]))
-    return topIds.map(id => byId.get(id)).filter(Boolean)
+    return topIds.map(id => byId.get(id)).filter(Boolean).filter(p => !isOutOfStock(p))
   }, [topIds, products])
 
   const topCats = useMemo(()=>cats.filter(c=>!c.parentId), [cats])
@@ -2460,6 +2820,12 @@ function App() {
     if (search)      l = l.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
     return l
   }, [products, selTop, selSub, search])
+
+  // Qidiruv aniq mos kelmasa — nom/kategoriya so'zlari ustma-ust tushgan mahsulotlarni taklif qilamiz
+  const searchFallback = useMemo(() => {
+    if (!search || filtered.length > 0) return []
+    return searchSuggestions(search, products, 8)
+  }, [search, filtered, products])
 
   // "Barchasi" ko'rinishida mahsulotlarni top-kategoriya bo'yicha bo'limlarga guruhlash
   // (scroll qilganda cat-bar'da tegishli kategoriya avtomatik yoritiladi)
@@ -2528,49 +2894,6 @@ function App() {
     _orbBounce(fromEl)
   }
 
-  // Telefon nusxasi (IMEI) — har nusxa BITTA dona va o'z qatori.
-  // Bir xil modelning turli IMEI'lari birlashib ketmasligi uchun kalitga
-  // nusxa id'si kiradi.
-  function addSerialToCart(p, unit, fromEl) {
-    const key = `${p.id}_s${unit.id}`
-    setCart(c => {
-      if (c.find(x => x.key === key)) return c    // bitta telefon — bitta dona
-      return [...c, {
-        key, product_id: p.id, serial_id: unit.id,
-        unit_id: null, variant_id: null, variant_name: '',
-        unit_name: 'dona', name: p.name,
-        imei: unit.imei_masked,
-        price: unit.price, currency: unit.currency || '', cur_price: unit.cur_price,
-        qty: 1, maxQty: 1, image: p.image,
-      }]
-    })
-    _orbBounce(fromEl)
-  }
-
-  // Telefon "son bilan" (grouped) — spec+narx bucketdan N dona. IMEI'siz:
-  // buyurtma tushganda tizim o'sha bucketdan aynan N nusxani band qiladi.
-  function addBucketToCart(p, b, qty, fromEl) {
-    const key = `${p.id}_b${b.key}`
-    const max = b.count || 1
-    const add = Math.min(qty, max)
-    if (add <= 0) return
-    const specLabel = [b.storage, b.color_label, b.region].filter(Boolean).join(' · ')
-    setCart(c => {
-      const ex = c.find(x => x.key === key)
-      if (ex) { if (ex.qty >= max) return c; return c.map(x => x.key===key ? {...x, qty: Math.min(x.qty+add, max)} : x) }
-      return [...c, {
-        key, product_id: p.id,
-        base_price: b.base_price, currency: b.currency || '',
-        storage: b.storage || '', color: b.color || '', region: b.region || '',
-        unit_id: null, variant_id: null, serial_id: null, variant_name: '',
-        unit_name: 'dona', name: p.name, spec_label: specLabel,
-        price: b.price, cur_price: b.cur_price,
-        qty: add, maxQty: max, image: p.image,
-      }]
-    })
-    _orbBounce(fromEl)
-  }
-
   function addVariantToCart(p, variant, qty, fromEl) {
     const key = `${p.id}_v${variant.id}`
     const max = variant.stock != null ? Math.floor(variant.stock) : Infinity
@@ -2596,12 +2919,6 @@ function App() {
           product_id: it.product_id,
           ...(it.variant_id ? {variant_id: it.variant_id} : {}),
           ...(it.unit_id    ? {unit_id:    it.unit_id}    : {}),
-          ...(it.serial_id  ? {serial_id:  it.serial_id}  : {}),
-          // Telefon "son bilan" (grouped): IMEI'siz — bucket kimligi (spec+narx)
-          ...(it.base_price != null ? {
-            base_price: it.base_price, currency: it.currency || '',
-            storage: it.storage || '', color: it.color || '', region: it.region || '',
-          } : {}),
           qty: it.qty,
         }))
       }
@@ -2621,32 +2938,32 @@ function App() {
         ${srchOpen
           ? html`<div className="header-search fade-in" style=${{maxWidth:'none',flex:1}}>
               <${ISearch} s=${16}/>
-              <input ref=${searchRef} value=${search} onInput=${e=>setSearch(e.target.value)}
+              <input ref=${searchRef} aria-label="Mahsulot qidirish" value=${search} onInput=${e=>setSearch(e.target.value)}
                 placeholder="Mahsulot qidirish..." style=${{flex:1,border:'none',background:'transparent',fontSize:14,color:'#111'}}/>
             </div>
-            <button className="login-btn" onClick=${()=>{setSrchOpen(false);setSearch('')}}>Bekor</button>`
+            <button type="button" className="login-btn" onClick=${()=>{setSrchOpen(false);setSearch('')}}>Bekor</button>`
 
           : html`<${React.Fragment}>
-              <div className="header-logo">${info?.store||"Do'kon"}</div>
+              <div className="header-logo">${info?.store||'Dukonline'}</div>
 
               <div className="header-search">
                 <${ISearch} s=${16}/>
-                <input value=${search} onInput=${e=>setSearch(e.target.value)} placeholder="Mahsulot qidirish..."/>
+                <input aria-label="Mahsulot qidirish" value=${search} onInput=${e=>setSearch(e.target.value)} placeholder="Mahsulot qidirish..."/>
               </div>
 
               <div className="header-actions">
-                <button className="icon-btn mobile-search-trigger" onClick=${()=>setSrchOpen(true)} title="Qidirish">
+                <button type="button" className="icon-btn mobile-search-trigger" onClick=${()=>setSrchOpen(true)} aria-label="Qidirish">
                   <${ISearch} s=${18}/>
                 </button>
-                <button className="icon-btn" onClick=${()=>setCartOpen(true)} title="Savat">
+                <button type="button" className="icon-btn" onClick=${()=>setCartOpen(true)} aria-label=${'Savat, '+fmtQty(count)+' ta mahsulot'}>
                   <${ICart} s=${18}/>
                   ${count>0 && html`<span className="badge">${count>9?'9+':count}</span>`}
                 </button>
                 ${customer
-                  ? html`<button className="avatar-btn" onClick=${()=>setPortal(true)}>
-                      ${customer.name.charAt(0).toUpperCase()}
+                  ? html`<button type="button" className="avatar-btn" aria-label="Mening hisobim" onClick=${()=>setPortal(true)}>
+                      ${(customer.name || customer.customer_name || '?').charAt(0).toUpperCase()}
                     </button>`
-                  : html`<button className="login-btn" onClick=${()=>setLoginOpen(true)}>
+                  : html`<button type="button" className="login-btn" onClick=${()=>setLoginOpen(true)}>
                       Kirish
                     </button>`}
               </div>
@@ -2660,16 +2977,22 @@ function App() {
     <!-- ── Category bar (top) ──────────────────────────────── -->
     <div ref=${catSentinelRef}></div>
     ${topCats.length > 0 && html`
-      <nav className=${'cat-bar'+(catStuck?' cat-bar-stuck':'')}>
+      <nav className=${'cat-bar'+(catStuck?' cat-bar-stuck':'')} aria-label="Mahsulot bo‘limlari">
         <div className="cat-bar-inner">
-          ${topCats.map(c => html`
-            <button key=${c.id} ref=${el=>{ if(el) chipRefs.current[c.id]=el }}
-              className=${'cat-chip'+((selTop===c.id||(selTop===null&&displayActiveCat===String(c.id))||(subDropdown&&subDropdown.catId===c.id))?' active':'')} onClick=${()=>goToCat(c.id)}>
-              ${catImgs[c.id] && html`<img className="cat-chip-thumb" src=${media(catImgs[c.id])} alt=""/>`}
-              ${c.name}
-              ${cats.some(sc=>sc.parentId===c.id) && html`<span className=${'cat-chip-arrow'+(subDropdown&&subDropdown.catId===c.id?' open':'')}
-                onClick=${e=>{e.stopPropagation();toggleSubDropdown(c.id, chipRefs.current[c.id])}}><${IChevronDown} s=${11}/></span>`}
-            </button>`)}
+          ${topCats.map(c => {
+            const hasSub = cats.some(sc=>sc.parentId===c.id)
+            const active = selTop===c.id || (selTop===null&&displayActiveCat===String(c.id)) || (subDropdown&&subDropdown.catId===c.id)
+            return html`<div key=${c.id} className="cat-chip-group">
+              <button type="button" ref=${el=>{ if(el) chipRefs.current[c.id]=el }}
+                className=${'cat-chip'+(hasSub?' has-sub':'')+(active?' active':'')} onClick=${()=>goToCat(c.id)}>
+                ${catImgs[c.id] && html`<img className="cat-chip-thumb" src=${media(catImgs[c.id])} alt=""/>`}
+                ${c.name}
+              </button>
+              ${hasSub && html`<button type="button" className=${'cat-chip-arrow'+(subDropdown&&subDropdown.catId===c.id?' open':'')}
+                aria-label=${c.name+' kichik bo‘limlari'} aria-expanded=${!!(subDropdown&&subDropdown.catId===c.id)}
+                onClick=${()=>toggleSubDropdown(c.id, chipRefs.current[c.id])}><${IChevronDown} s=${11}/></button>`}
+            </div>`
+          })}
         </div>
       </nav>`}
 
@@ -2688,7 +3011,7 @@ function App() {
 
     <!-- ── Sub-category bar (tanlangan top'da sub bo'lsa) ───── -->
     ${subCats.length > 0 && html`
-      <nav className="cat-bar cat-bar-sub">
+      <nav className="cat-bar cat-bar-sub" aria-label="Kichik bo‘limlar">
         <div className="cat-bar-inner">
           <button className=${'cat-chip cat-chip-sub'+(selSub===null?' active':'')} onClick=${()=>setSelSub(null)}>
             Barchasi
@@ -2711,12 +3034,16 @@ function App() {
       ${!loading && !error && !search && selTop==null && selSub==null && topProducts.length>0 && html`
         <div className="top-rail-wrap">
           <div className="top-rail-head">
-            <h2>🔥 Top tovarlar</h2>
+            <h2>Top tovarlar</h2>
             <span className="top-rail-badge">Eng ko'p sotilgan</span>
           </div>
           <div className="top-rail">
             ${topProducts.map(p => html`
               <div className="top-rail-item" key=${p.id}>
+                <div className="top-rail-rank">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  TOP
+                </div>
                 <${ProductItem} p=${p} onAdd=${addToCart} setQty=${updQty} cart=${cart} showImages=${showImages} onDetail=${setDetail}/>
               </div>`)}
           </div>
@@ -2727,11 +3054,25 @@ function App() {
       ${error   && html`<div className="product-grid"><div className="state-center">
         <div className="state-emoji">😕</div>
         <div className="state-text">Xatolik yuz berdi: ${error}</div>
+        <button type="button" className="state-retry" onClick=${()=>setReloadKey(k=>k+1)}>Qayta urinish</button>
       </div></div>`}
-      ${!loading && !error && filtered.length===0 && html`<div className="product-grid"><div className="state-center">
+      ${!loading && !error && filtered.length===0 && searchFallback.length===0 && html`<div className="product-grid"><div className="state-center">
         <div className="state-emoji">🔍</div>
         <div className="state-text">Mahsulot topilmadi</div>
       </div></div>`}
+      ${!loading && !error && filtered.length===0 && searchFallback.length>0 && html`
+        <div>
+          <div className="state-center" style=${{padding:'56px 20px 8px'}}>
+            <div className="state-emoji">🔍</div>
+            <div className="state-text">"${search}" bo'yicha aniq mos kelmadi</div>
+          </div>
+          <div className="fallback-label">Shunga o'xshash mahsulotlar</div>
+          <div className="product-grid">
+            ${searchFallback.map(p => html`
+              <${ProductItem} key=${p.id} p=${p} onAdd=${addToCart} setQty=${updQty} cart=${cart} showImages=${showImages}
+                onDetail=${setDetail}/>`)}
+          </div>
+        </div>`}
 
       <!-- Grid -->
       ${!loading && !error && filtered.length>0 && groupedSections && html`
@@ -2779,9 +3120,11 @@ function App() {
       onClose=${()=>setDetail(null)}
       onAdd=${addToCart}
       onAddVariant=${addVariantToCart}
-      onAddSerial=${addSerialToCart}
-      onAddBucket=${addBucketToCart}
-      cart=${cart}/>`}
+      cart=${cart}
+      allProducts=${products}
+      setCartQty=${updQty}
+      showImages=${showImages}
+      onSelect=${setDetail}/>`}
 
     <!-- ── Category Drawer ───────────────────── -->
     <${CategoryDrawer}
@@ -2803,7 +3146,7 @@ function App() {
 
 // Mobile search button — hide on desktop, show on mobile
 const style = document.createElement('style')
-style.textContent = '.mobile-search-trigger{display:none!important}@media(max-width:640px){.mobile-search-trigger{display:flex!important}.header-search{display:none!important}}'
+style.textContent = '.mobile-search-trigger{display:none!important}@media(max-width:640px){.mobile-search-trigger{display:flex!important}.header-search:not(.fade-in){display:none!important}.header-search.fade-in{display:flex!important}}'
 document.head.appendChild(style)
 
 createRoot(document.getElementById('root')).render(html`<${App}/>`)
