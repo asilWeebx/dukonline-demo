@@ -179,7 +179,8 @@ export interface Customer {
   credit?: number;
   currency_debts?: Record<string, number>;
   /** Advance-payment credit held in a foreign currency (mirrors `currency_debts`).
-   *  Not yet returned by /storefront/customer/ as of 2026-09-23 — see AccountView. */
+   *  The storefront UI renders this map directly; `/storefront/customer/` must
+   *  include it for foreign-currency prepayments to be visible. */
   currency_credits?: Record<string, number>;
   [key: string]: unknown;
 }

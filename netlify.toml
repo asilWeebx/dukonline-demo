@@ -2,5 +2,12 @@
   command = "npm run build"
   publish = ".next"
 
+[build.environment]
+  # DUKONLINE_STOREFRONT_KEY ends up written into Next.js's own Turbopack
+  # build cache (an incremental-build artifact, never served to visitors).
+  # client.ts imports "server-only", so the key can't reach the browser —
+  # this just stops Netlify's secrets scanner from flagging that cache file.
+  SECRETS_SCAN_OMIT_PATHS = "**/.next/cache/**"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
