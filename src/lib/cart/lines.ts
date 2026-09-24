@@ -1,5 +1,5 @@
 import { isWeightUnit } from "../storefront/currency.ts";
-import { unitMaxQty } from "../storefront/product-view.ts";
+import { getPhone, hasVariants, unitMaxQty } from "../storefront/product-view.ts";
 import type {
   OrderItemPayload,
   PhoneBucket,
@@ -252,18 +252,21 @@ export function revalidateCart(cart: CartItem[], products: Product[]): CartItem[
     }
 
     const unit = p.units?.find((u) => u.unit_id === it.unit_id) || p.units?.[0];
-    if (!unit) return [];
+    // A plain product with no units went in as its bare base unit (see
+    // `addUnitLine`) and stays that way. Only a product now sold as variants
+    // or phones has no plain line left to keep.
+    if (!unit && (hasVariants(p) || getPhone(p))) return [];
     const maxQty = storable(unitMaxQty(p, unit));
     if (maxQty <= 0) return [];
     return [{
       ...it,
-      unit_id: unit.unit_id,
-      unit_name: unit.unit_name || "dona",
-      weight: isWeightUnit(unit.unit_name),
+      unit_id: unit?.unit_id,
+      unit_name: unit?.unit_name || "dona",
+      weight: isWeightUnit(unit?.unit_name),
       name: p.name,
-      price: unit.price,
-      currency: unit.currency || "",
-      cur_price: unit.cur_price,
+      price: unit?.price ?? 0,
+      currency: unit?.currency || "",
+      cur_price: unit?.cur_price,
       image: p.image,
       maxQty,
       qty: Math.min(it.qty, maxQty),

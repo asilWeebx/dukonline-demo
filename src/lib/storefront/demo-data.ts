@@ -359,6 +359,17 @@ const PRODUCTS: Product[] = [
     phone: GROUPED_PHONE,
     attributes: { Ekran: "6.67\" AMOLED", Batareya: "5000 mAh", Kafolat: "12 oy" },
   }),
+
+  // ── Kategoriyasiz ───────────────────────────────────────────────
+  // No inCategory() call — ERP rows land here whenever a product was never
+  // filed under a category, exercising the "Boshqa mahsulotlar" catch-all.
+  product({
+    id: 9001,
+    name: "Bayram sharlari to'plami",
+    description: "Bo'limga hali biriktirilmagan mahsulot.",
+    stock: 30,
+    units: [unit({ price: 35_000 })],
+  }),
 ];
 
 export function demoStoreInfo(): StoreInfo {

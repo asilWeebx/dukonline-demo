@@ -9,7 +9,14 @@ import { useCart } from "@/lib/cart/CartProvider";
 import { unitKey, variantKey } from "@/lib/cart/lines";
 import { stepQuantity } from "@/lib/cart/quantity";
 import { fmtQty, isWeightUnit, money } from "@/lib/storefront/currency";
-import { firstAvailableUnit, getPhone, hasVariants, unitMaxQty } from "@/lib/storefront/product-view";
+import {
+  firstAvailableUnit,
+  getPhone,
+  hasVariants,
+  isGroupedPhone,
+  phoneChoices,
+  unitMaxQty,
+} from "@/lib/storefront/product-view";
 import type { PhoneGroup, Product } from "@/lib/storefront/types";
 
 import { IBox, IZoomIn } from "./icons";
@@ -52,16 +59,14 @@ export function ProductDetail({
   // "grouped": spec + price buckets, the customer picks how many;
   // "individual": every IMEI listed (groups + units).
   const phone = getPhone(p);
-  const isGrouped = Boolean(phone && phone.mode === "grouped");
-  const phGroups: PhoneGroup[] = phone && !isGrouped ? phone.groups : [];
+  const isGrouped = Boolean(phone && isGroupedPhone(phone));
+  const phGroups: PhoneGroup[] = phone && !isGrouped ? phone.groups || [] : [];
   const phBuckets = phone && isGrouped ? phone.buckets || [] : [];
   const [phKey, setPhKey] = useState(phGroups[0]?.key ?? null);
   const [phBKey, setPhBKey] = useState(phBuckets[0]?.key ?? null);
   const phSel = phone && !isGrouped ? phGroups.find((g) => g.key === phKey) || phGroups[0] : null;
   const phBSel = phBuckets.find((b) => b.key === phBKey) || phBuckets[0] || null;
-  const phStorages = [...new Set(phGroups.map((g) => g.storage).filter(Boolean))];
-  const phColors = phGroups.filter((g) => !phSel?.storage || g.storage === phSel.storage);
-  const phRegions = phColors.filter((g) => !phSel?.color || g.color === phSel.color);
+  const { storages: phStorages, colors: phColors, regions: phRegions } = phoneChoices(phGroups, phSel);
   /** Moves to the closest configuration that has the requested option. */
   const pickPhone = (patch: Partial<Pick<PhoneGroup, "storage" | "color" | "region">>) => {
     const want = { storage: phSel?.storage, color: phSel?.color, region: phSel?.region, ...patch };
@@ -272,13 +277,13 @@ export function ProductDetail({
                   <div className="detail-unit-select">
                     {phStorages.map((st) => (
                       <button
-                        key={st}
+                        key={st || "—"}
                         type="button"
                         className={`detail-unit-chip${phSel?.storage === st ? " active" : ""}`}
                         aria-pressed={phSel?.storage === st}
                         onClick={() => pickPhone({ storage: st })}
                       >
-                        {st}
+                        {st || "—"}
                       </button>
                     ))}
                   </div>

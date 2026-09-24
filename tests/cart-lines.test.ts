@@ -117,6 +117,20 @@ test("revalidation drops sold phones and empty buckets", () => {
   assert.deepEqual(revalidateCart(cart, [phone]), []);
 });
 
+test("a plain product with no units keeps its bare line through revalidation", () => {
+  const p = product({ id: 8, units: [] });
+  const cart = addUnitLine([], p, p.units[0]);
+  assert.equal(cart[0].key, "8_base");
+  assert.equal(revalidateCart(cart, [p]), cart);
+});
+
+test("a unit line is dropped once its product is sold only as variants", () => {
+  const p = product({ id: 8, units: [] });
+  const cart = addUnitLine([], p, p.units[0]);
+  const nowVariants = product({ id: 8, units: [], has_variants: true, variants: [variant()] });
+  assert.deepEqual(revalidateCart(cart, [nowVariants]), []);
+});
+
 test("revalidation returns the same array when nothing changed", () => {
   const p = product();
   const cart = addUnitLine([], p, p.units[0]);

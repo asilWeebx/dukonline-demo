@@ -9,7 +9,12 @@ import {
   getTopProductIds,
   media,
 } from "./client";
-import { buildCategories, categoryImageMap, rankTopProducts } from "./catalog";
+import {
+  buildCategories,
+  categoryImageMap,
+  normalizeCategories,
+  rankTopProducts,
+} from "./catalog";
 import { demoEnabled } from "./demo";
 import { demoCatalog, demoStoreInfo, demoTopProductIds } from "./demo-data";
 import type {
@@ -70,11 +75,28 @@ function classify(error: unknown): FailureReason {
   return "unavailable";
 }
 
+/** Keys the ERP has used for a banner's picture, most specific first. */
+const BANNER_IMAGE_KEYS = ["image_url", "image", "url", "photo", "file"] as const;
+
+/**
+ * A banner's picture under whichever key the ERP used. A key missing from the
+ * list above must not make an uploaded banner disappear from the carousel, so
+ * any other value that names an image file is taken instead.
+ */
+function bannerImage(banner: Exclude<RawStoreBanner, string>): string {
+  const known = BANNER_IMAGE_KEYS.map((key) => banner[key]).find(Boolean);
+  if (known) return known;
+  const other = Object.values(banner).find(
+    (value) => typeof value === "string" && /\.(avif|gif|jpe?g|png|svg|webp)(\?|$)/i.test(value),
+  );
+  return typeof other === "string" ? other : "";
+}
+
 /** Banners uploaded under "Online do'kon → Bannerlar", as a URL or an object. */
 function normalizeBanner(banner: RawStoreBanner): StoreBanner {
   if (typeof banner === "string") return { image: media(banner), title: "", align: "left" };
   return {
-    image: media(banner.image_url || banner.image || banner.url || banner.photo || banner.file),
+    image: media(bannerImage(banner)),
     title: banner.title || "",
     align: banner.align === "right" ? "right" : "left",
   };
@@ -91,13 +113,17 @@ function summarize(info: StoreInfo): StoreSummary {
 /**
  * Image URLs arrive either absolute (a CDN or a URL the shop owner pasted) or
  * relative to the API host. Resolving them here means client components only
- * ever see absolute URLs.
+ * ever see absolute URLs. Category fields are normalized here too, so the
+ * category bar, the grid sections, the filters and the breadcrumbs all read
+ * the same, complete two-level tree.
  */
 function view(raw: CatalogResponse, topIds: number[]): CatalogView {
-  const products = (raw.results ?? []).map((product) => ({
-    ...product,
-    image: media(product.image),
-  }));
+  const products = normalizeCategories(
+    (raw.results ?? []).map((product) => ({
+      ...product,
+      image: media(product.image),
+    })),
+  );
   const categoryImages = categoryImageMap(
     (raw.category_images ?? []).map((c) => ({ ...c, image: media(c.image) })),
   );

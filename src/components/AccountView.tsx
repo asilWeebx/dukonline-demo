@@ -503,7 +503,7 @@ function CustomerPortal({ customer, onLogout }: { customer: Customer; onLogout: 
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 15, color: "var(--success-bright)" }}>+{som(+(p.amount || 0))}</div>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: "var(--success-bright)" }}>+{money(+(p.amount || 0), p.currency)}</div>
                   <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 2 }}>{fmtDate(p.created_at)}</div>
                   {p.note ? <div style={{ fontSize: 11, color: "var(--faint)", marginTop: 2 }}>{p.note}</div> : null}
                 </div>

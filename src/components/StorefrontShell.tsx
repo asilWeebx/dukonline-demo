@@ -93,7 +93,12 @@ export function StorefrontShell({
       search,
       setSearch: (query) => {
         setSearchState(query);
-        if (query) showHome();
+        if (!query) return;
+        // Search spans the whole catalog. A category picked earlier, perhaps
+        // on another page, would otherwise hide every match outside it.
+        setSelTop(null);
+        setSelSub(null);
+        showHome();
       },
 
       selTop,

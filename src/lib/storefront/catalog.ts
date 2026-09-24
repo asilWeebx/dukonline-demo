@@ -1,12 +1,107 @@
 import type { Category, CategoryImage, Product } from "./types";
 
 /**
+ * Synthetic top-level category for products the ERP never assigned one to.
+ * Real category ids come from the ERP as positive integers, so this can't
+ * collide with one.
+ */
+export const UNCATEGORIZED_ID = -1;
+const UNCATEGORIZED_NAME = "Boshqa mahsulotlar";
+
+/** After `normalizeCategories`, a product has a category id exactly when it has a named category to sit in. */
+export function isUncategorized(p: Product): boolean {
+  return !p.category_id;
+}
+
+interface NamedCategory {
+  id: number;
+  name: string;
+}
+
+/**
+ * Rewrites each product's category fields into the two levels the storefront
+ * shows: a top category, and at most one subcategory under it.
+ *
+ * The API sends no category tree, only each product's category and that
+ * category's parent, and nothing guarantees those rows are complete. Taken
+ * as they come, a product drops out of the home grid without a trace when its
+ * category has no name (deleted or renamed in the ERP), when its parent has
+ * no name so the category hangs under nothing, or when the tree is three
+ * levels deep so its parent is itself a subcategory. So:
+ *  - a name missing on one row is taken from any other row that has it;
+ *  - a nameless category hands its products to its nearest named ancestor,
+ *    or to "Boshqa mahsulotlar" when it has none;
+ *  - a category whose parent is unknown becomes a top category;
+ *  - anything deeper sits directly under its top category, labelled with the
+ *    levels in between ("Erkaklar › Ko'ylaklar") so same-named leaves differ.
+ *
+ * `view()` runs this once, so every later derivation sees the same rows.
+ */
+export function normalizeCategories(products: Product[]): Product[] {
+  const names = new Map<number, string>();
+  const parents = new Map<number, number>();
+  const learnName = (id: number | null, name: string | null) => {
+    const trimmed = name?.trim();
+    if (id && trimmed && !names.has(id)) names.set(id, trimmed);
+  };
+  for (const p of products) {
+    learnName(p.category_id, p.category_name);
+    learnName(p.category_parent_id, p.category_parent_name);
+    const { category_id: id, category_parent_id: parentId } = p;
+    if (id && parentId && parentId !== id && !parents.has(id)) parents.set(id, parentId);
+  }
+
+  /** The named categories from `id` up to its root, nearest first. */
+  const namedChain = (id: number): NamedCategory[] => {
+    const chain: NamedCategory[] = [];
+    const seen = new Set<number>();
+    for (let current: number | undefined = id; current !== undefined; ) {
+      seen.add(current);
+      const name = names.get(current);
+      if (name) chain.push({ id: current, name });
+      let up = parents.get(current);
+      // A loop in the ERP data: cut it here, so every later walk agrees on
+      // where the tree ends.
+      if (up !== undefined && seen.has(up)) {
+        parents.delete(current);
+        up = undefined;
+      }
+      current = up;
+    }
+    return chain;
+  };
+
+  return products.map((p) => {
+    const anchor = p.category_id || p.category_parent_id;
+    const chain = anchor ? namedChain(anchor) : [];
+    const top = chain.at(-1);
+    if (!top) {
+      return { ...p, category_id: null, category_name: null, category_parent_id: null, category_parent_name: null };
+    }
+    if (chain.length === 1) {
+      return { ...p, category_id: top.id, category_name: top.name, category_parent_id: null, category_parent_name: null };
+    }
+    return {
+      ...p,
+      category_id: chain[0].id,
+      category_name: chain.slice(0, -1).reverse().map((c) => c.name).join(" › "),
+      category_parent_id: top.id,
+      category_parent_name: top.name,
+    };
+  });
+}
+
+/**
  * The API returns no category tree — each product just carries its category
  * and that category's parent. The flat list is rebuilt here from the product
- * rows, in the order the ERP first mentions each category.
+ * rows (after `normalizeCategories`), in the order the ERP first mentions
+ * each category. Products with no category at all are collected under a
+ * synthetic catch-all, appended last, so they still have somewhere to appear
+ * instead of vanishing from the grid.
  */
 export function buildCategories(products: Product[]): Category[] {
   const map = new Map<number, Category>();
+  let hasUncategorized = false;
   for (const p of products) {
     if (p.category_id && p.category_name) {
       map.set(p.category_id, {
@@ -14,6 +109,8 @@ export function buildCategories(products: Product[]): Category[] {
         name: p.category_name,
         parentId: p.category_parent_id || null,
       });
+    } else if (isUncategorized(p)) {
+      hasUncategorized = true;
     }
     if (p.category_parent_id && p.category_parent_name && !map.has(p.category_parent_id)) {
       map.set(p.category_parent_id, {
@@ -22,6 +119,9 @@ export function buildCategories(products: Product[]): Category[] {
         parentId: null,
       });
     }
+  }
+  if (hasUncategorized) {
+    map.set(UNCATEGORIZED_ID, { id: UNCATEGORIZED_ID, name: UNCATEGORIZED_NAME, parentId: null });
   }
   return [...map.values()];
 }
@@ -44,7 +144,9 @@ export function approxPrice(p: Product): number {
 
 /**
  * Products in the same category (then the same parent category), nearest in
- * price first. Derived from the loaded catalog — no API call.
+ * price first. Derived from the loaded catalog — no API call. Uncategorized
+ * products only match other uncategorized products, since they share no
+ * category or parent to compare.
  */
 export function similarProducts(p: Product | null, all: Product[], limit = 10): Product[] {
   if (!p) return [];
@@ -52,7 +154,9 @@ export function similarProducts(p: Product | null, all: Product[], limit = 10): 
   const sameParent: Product[] = [];
   for (const x of all) {
     if (x.id === p.id) continue;
-    if (p.category_id && x.category_id === p.category_id) sameCat.push(x);
+    if (isUncategorized(p)) {
+      if (isUncategorized(x)) sameCat.push(x);
+    } else if (p.category_id && x.category_id === p.category_id) sameCat.push(x);
     else if (p.category_parent_id && x.category_parent_id === p.category_parent_id) sameParent.push(x);
   }
   const base = approxPrice(p);
@@ -126,6 +230,7 @@ export function filterProducts(
 ): Product[] {
   let list = products;
   if (selSub) list = list.filter((p) => p.category_id === selSub);
+  else if (selTop === UNCATEGORIZED_ID) list = list.filter(isUncategorized);
   else if (selTop) list = list.filter((p) => p.category_id === selTop || p.category_parent_id === selTop);
   if (search) {
     const q = search.toLowerCase();
@@ -139,16 +244,26 @@ export interface CategorySection {
   items: Product[];
 }
 
-/** Groups products under their top-level category, keeping ERP order; empty groups are dropped. */
+/**
+ * Groups products under their top-level category, keeping ERP order; empty
+ * groups are dropped. A product whose top category isn't listed (a row that
+ * skipped `normalizeCategories`) goes to the catch-all instead of vanishing,
+ * so the sections always add up to the product count.
+ */
 export function groupByTopCategory(products: Product[], topCats: Category[]): CategorySection[] {
   const byCat = new Map<number, Product[]>(topCats.map((c) => [c.id, []]));
+  const stray: Product[] = [];
   for (const p of products) {
-    const topId = p.category_parent_id || p.category_id;
-    if (topId != null) byCat.get(topId)?.push(p);
+    const topId = p.category_parent_id || p.category_id || UNCATEGORIZED_ID;
+    (byCat.get(topId) ?? byCat.get(UNCATEGORIZED_ID) ?? stray).push(p);
   }
-  return topCats
+  const sections = topCats
     .map((cat) => ({ cat, items: byCat.get(cat.id) ?? [] }))
     .filter((g) => g.items.length > 0);
+  if (stray.length > 0) {
+    sections.push({ cat: { id: UNCATEGORIZED_ID, name: UNCATEGORIZED_NAME, parentId: null }, items: stray });
+  }
+  return sections;
 }
 
 /** Best-seller IDs matched against the catalog in rank order, sold-out ones skipped. */

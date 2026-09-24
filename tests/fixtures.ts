@@ -1,5 +1,7 @@
 import type {
   PhoneBucket,
+  PhoneGroup,
+  PhoneInfo,
   PhoneSerialUnit,
   Product,
   ProductUnit,
@@ -47,6 +49,33 @@ export function serial(overrides: Partial<PhoneSerialUnit> = {}): PhoneSerialUni
     price: 6050000,
     cur_price: 500,
     currency: "USD",
+    ...overrides,
+  };
+}
+
+export function group(overrides: Partial<PhoneGroup> = {}): PhoneGroup {
+  return {
+    key: "128 GB|black|",
+    storage: "128 GB",
+    color: "black",
+    color_label: "Qora",
+    color_hex: "#000000",
+    region: "",
+    count: 1,
+    uniform: false,
+    units: [serial()],
+    ...overrides,
+  };
+}
+
+export function phoneInfo(overrides: Partial<PhoneInfo> = {}): PhoneInfo {
+  return {
+    mode: "individual",
+    from_price: 6050000,
+    from_cur_price: 500,
+    currency: "USD",
+    groups: [],
+    buckets: [],
     ...overrides,
   };
 }

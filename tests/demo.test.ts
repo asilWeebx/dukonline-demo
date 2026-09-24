@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildCategories, isOutOfStock, rankTopProducts } from "../src/lib/storefront/catalog.ts";
+import {
+  buildCategories,
+  isOutOfStock,
+  normalizeCategories,
+  rankTopProducts,
+} from "../src/lib/storefront/catalog.ts";
 import { demoCatalog, demoStoreInfo, demoTopProductIds } from "../src/lib/storefront/demo-data.ts";
 import { demoEnabled } from "../src/lib/storefront/demo.ts";
 
@@ -39,7 +44,8 @@ test("placeholder data needs the flag, and is refused on Vercel production", () 
 
 test("the seed catalog survives the real derivation pipeline", () => {
   const raw = demoCatalog();
-  const products = raw.results;
+  const products = normalizeCategories(raw.results);
+  assert.deepEqual(products, raw.results, "well-formed seed rows need no category repair");
 
   // Categories are rebuilt from the product rows exactly as live data is —
   // there is no category endpoint. Both levels come back in one flat list.
@@ -47,11 +53,19 @@ test("the seed catalog survives the real derivation pipeline", () => {
   const tops = categories.filter((c) => c.parentId === null);
   assert.deepEqual(
     tops.map((c) => c.name),
-    ["Kiyim-kechak", "Oshxona buyumlari", "Qurilish mollari", "Telefon aksessuarlari", "Santexnika", "Telefon"],
+    [
+      "Kiyim-kechak",
+      "Oshxona buyumlari",
+      "Qurilish mollari",
+      "Telefon aksessuarlari",
+      "Santexnika",
+      "Telefon",
+      "Boshqa mahsulotlar",
+    ],
   );
   assert.ok(
-    tops.every((top) => categories.some((c) => c.parentId === top.id)),
-    "every top category has at least one subcategory",
+    tops.slice(0, -1).every((top) => categories.some((c) => c.parentId === top.id)),
+    "every real top category has at least one subcategory",
   );
 
   // Best sellers resolve against the same rows.
@@ -82,4 +96,6 @@ test("the seed catalog covers every card state the UI can render", () => {
   assert.ok(byId(6001).phone!.groups.flatMap((g) => g.units).length >= 3, "individual copies");
   assert.equal(byId(6002).phone?.mode, "grouped");
   assert.ok(byId(6002).phone!.buckets.length >= 3, "priced buckets");
+
+  assert.equal(byId(9001).category_id, null, "an uncategorized product drives the catch-all section");
 });
