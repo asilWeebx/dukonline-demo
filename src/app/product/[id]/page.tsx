@@ -25,9 +25,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-/** Every product has a real, shareable URL. */
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+/**
+ * Every product has a real, shareable URL; `?v=3059` opens it on that
+ * variant.
+ */
+export default async function ProductPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ v?: string | string[] }>;
+}) {
+  const [{ id }, { v }] = await Promise.all([params, searchParams]);
   const productId = Number(id);
   if (!Number.isFinite(productId)) notFound();
 
@@ -43,10 +52,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   }
   if (!product) notFound();
 
+  const variantId = Number(Array.isArray(v) ? v[0] : v);
   return (
     <ProductDetail
       key={product.id}
       product={product}
+      initialVariantId={Number.isFinite(variantId) ? variantId : null}
       similar={similarProducts(product, catalog.products, 10)}
       showImages={catalog.showImages}
     />

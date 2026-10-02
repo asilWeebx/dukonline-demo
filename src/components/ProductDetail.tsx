@@ -10,14 +10,18 @@ import { unitKey, variantKey } from "@/lib/cart/lines";
 import { stepQuantity } from "@/lib/cart/quantity";
 import { fmtQty, isWeightUnit, money } from "@/lib/storefront/currency";
 import {
+  defaultVariant,
   firstAvailableUnit,
   getPhone,
+  hasVariantPhotos,
   hasVariants,
   isGroupedPhone,
   phoneChoices,
+  productGallery,
   unitMaxQty,
+  variantImage,
 } from "@/lib/storefront/product-view";
-import type { PhoneGroup, Product } from "@/lib/storefront/types";
+import type { PhoneGroup, Product, ProductVariant } from "@/lib/storefront/types";
 
 import { IBox, IZoomIn } from "./icons";
 import { ImgLightbox } from "./ImgLightbox";
@@ -31,14 +35,17 @@ const CART_ICON =
 
 /**
  * The product page's interactive part. Rendered with `key={product.id}`, so
- * moving to another product starts from fresh selections.
+ * moving to another product starts from fresh selections. The chosen variant
+ * is kept in the URL (`?v=3059`), so a shared link opens on that variant.
  */
 export function ProductDetail({
   product: p,
+  initialVariantId,
   similar,
   showImages,
 }: {
   product: Product;
+  initialVariantId: number | null;
   similar: Product[];
   showImages: boolean;
 }) {
@@ -77,17 +84,28 @@ export function ProductDetail({
     if (g) setPhKey(g.key);
   };
 
-  const [variantId, setVariantId] = useState(
-    variants ? (p.variants.find((v) => v.in_stock) || p.variants[0])?.id ?? null : null,
-  );
+  const [variantId, setVariantId] = useState(defaultVariant(p, initialVariantId)?.id ?? null);
   const [unitId, setUnitId] = useState(firstAvailableUnit(p)?.unit_id ?? null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const addRef = useRef<HTMLButtonElement>(null);
 
   const selVariant = variants ? p.variants.find((v) => v.id === variantId) || p.variants[0] : null;
+  /** Variant chips lead with their photo when the variants have their own. */
+  const variantPhotos = hasVariantPhotos(p);
+
+  // ── Photos: the gallery, opened on the selected variant's own photo ──
+  const gallery = productGallery(p).filter(isRenderableImageUrl);
+  const [photo, setPhoto] = useState(() => variantImage(p, selVariant));
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+
+  const selectVariant = (v: ProductVariant) => {
+    setVariantId(v.id);
+    setQty(1);
+    setPhoto(variantImage(p, v));
+    window.history.replaceState(null, "", `?v=${v.id}`);
+  };
   const unit = !variants ? p.units?.find((u) => u.unit_id === unitId) || p.units?.[0] : null;
 
   // Each price in its own currency: USD goods in $, everything else in so'm.
@@ -111,7 +129,8 @@ export function ProductDetail({
   const atCartLimit = availableToAdd <= 0;
 
   // The detail view always shows the photo; `showImages` only governs cards.
-  const hasImage = isRenderableImageUrl(p.image) && !imageError;
+  const hasImage = isRenderableImageUrl(photo) && failedImage !== photo;
+  const photoAlt = selVariant && photo === variantImage(p, selVariant) ? `${p.name} ${selVariant.name}` : p.name;
 
   const handleAdd = () => {
     if (out || atCartLimit || added) return;
@@ -151,43 +170,63 @@ export function ProductDetail({
       </nav>
 
       <div className="detail-body">
-        <div
-          className={`detail-img-side${hasImage ? " zoomable" : ""}`}
-          role={hasImage ? "button" : undefined}
-          tabIndex={hasImage ? 0 : undefined}
-          aria-label={hasImage ? `${p.name} rasmini kattalashtirish` : undefined}
-          onClick={hasImage ? () => setZoomOpen(true) : undefined}
-          onKeyDown={
-            hasImage
-              ? (event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setZoomOpen(true);
+        <div className="detail-media">
+          <div
+            className={`detail-img-side${hasImage ? " zoomable" : ""}`}
+            role={hasImage ? "button" : undefined}
+            tabIndex={hasImage ? 0 : undefined}
+            aria-label={hasImage ? `${p.name} rasmini kattalashtirish` : undefined}
+            onClick={hasImage ? () => setZoomOpen(true) : undefined}
+            onKeyDown={
+              hasImage
+                ? (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setZoomOpen(true);
+                    }
                   }
-                }
-              : undefined
-          }
-        >
-          {hasImage ? (
-            <SafeImage
-              src={p.image}
-              alt={p.name}
-              sizes="(max-width: 640px) 380px, 400px"
-              eager
-              fallbackSize={100}
-              onFail={() => setImageError(true)}
-            />
-          ) : (
-            <div className="image-fallback">
-              <IBox s={100} />
-              <span className="sr-only">Rasm mavjud emas</span>
-            </div>
-          )}
-          {hasImage && (
-            <div className="img-zoom-hint">
-              <IZoomIn s={13} />
-              Kattalashtirish
-            </div>
+                : undefined
+            }
+          >
+            {hasImage ? (
+              <SafeImage
+                src={photo}
+                alt={photoAlt}
+                sizes="(max-width: 640px) 380px, 400px"
+                eager
+                fallbackSize={100}
+                onFail={() => setFailedImage(photo)}
+              />
+            ) : (
+              <div className="image-fallback">
+                <IBox s={100} />
+                <span className="sr-only">Rasm mavjud emas</span>
+              </div>
+            )}
+            {hasImage && (
+              <div className="img-zoom-hint">
+                <IZoomIn s={13} />
+                Kattalashtirish
+              </div>
+            )}
+          </div>
+
+          {gallery.length > 1 && (
+            <ul className="detail-thumbs" aria-label="Rasmlar">
+              {gallery.map((image, i) => (
+                <li key={image}>
+                  <button
+                    type="button"
+                    className="detail-thumb"
+                    aria-label={`Rasm ${i + 1}`}
+                    aria-current={image === photo ? "true" : undefined}
+                    onClick={() => setPhoto(image)}
+                  >
+                    <SafeImage src={image} alt="" sizes="64px" fallbackSize={20} />
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
@@ -222,24 +261,28 @@ export function ProductDetail({
                 {p.variants.map((v) => (
                   <button
                     key={v.id}
-                    className={`detail-unit-chip variant-chip${variantId === v.id ? " active" : ""}${v.in_stock ? "" : " unavailable"}`}
+                    className={`detail-unit-chip variant-chip${variantPhotos ? " has-photo" : ""}${selVariant?.id === v.id ? " active" : ""}${v.in_stock ? "" : " unavailable"}`}
                     type="button"
-                    aria-pressed={variantId === v.id}
+                    aria-pressed={selVariant?.id === v.id}
                     disabled={!v.in_stock}
                     onClick={() => {
-                      if (v.in_stock) {
-                        setVariantId(v.id);
-                        setQty(1);
-                      }
+                      if (v.in_stock) selectVariant(v);
                     }}
                   >
-                    <span className="vc-name">{v.name}</span>
-                    {(v.cur_original_price ?? v.original_price) != null && (
-                      <span className="vc-orig">{money(v.cur_original_price ?? v.original_price, v.currency)}</span>
+                    {variantPhotos && (
+                      <span className="vc-photo">
+                        <SafeImage src={variantImage(p, v)} alt="" sizes="44px" fallbackSize={18} />
+                      </span>
                     )}
-                    <span className="vc-price">{money(v.cur_price ?? v.price, v.currency)}</span>
-                    {v.stock != null && <span className="vc-stock">{Math.floor(v.stock)} ta</span>}
-                    {!v.in_stock && <span className="vc-out">Tugadi</span>}
+                    <span className="vc-text">
+                      <span className="vc-name">{v.name}</span>
+                      {(v.cur_original_price ?? v.original_price) != null && (
+                        <span className="vc-orig">{money(v.cur_original_price ?? v.original_price, v.currency)}</span>
+                      )}
+                      <span className="vc-price">{money(v.cur_price ?? v.price, v.currency)}</span>
+                      {v.stock != null && <span className="vc-stock">{Math.floor(v.stock)} ta</span>}
+                      {!v.in_stock && <span className="vc-out">Tugadi</span>}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -597,7 +640,7 @@ export function ProductDetail({
         </div>
       )}
 
-      {zoomOpen && hasImage && <ImgLightbox src={p.image} alt={p.name} onClose={() => setZoomOpen(false)} />}
+      {zoomOpen && hasImage && <ImgLightbox src={photo} alt={photoAlt} onClose={() => setZoomOpen(false)} />}
     </div>
   );
 }

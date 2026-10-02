@@ -122,6 +122,8 @@ function view(raw: CatalogResponse, topIds: number[]): CatalogView {
     (raw.results ?? []).map((product) => ({
       ...product,
       image: media(product.image),
+      images: product.images?.map(media).filter(Boolean),
+      variants: (product.variants ?? []).map((v) => ({ ...v, image: media(v.image) || null })),
     })),
   );
   const categoryImages = categoryImageMap(

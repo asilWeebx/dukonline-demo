@@ -77,7 +77,7 @@ src/
 ├── app/
 │   ├── layout.tsx          fetches store + catalog once, mounts providers and the shell
 │   ├── page.tsx            home: banners, category bar, top products, sections
-│   ├── product/[id]/       product page (units, variants, IMEI phones, similar)
+│   ├── product/[id]/       product page (gallery, units, variants, IMEI phones, similar)
 │   ├── cart/ checkout/ account/
 │   ├── api/                6 route handlers proxying the API and Nominatim
 │   └── globals.css         the whole design system (see below)
@@ -107,6 +107,14 @@ src/
   copy), `grouped` mode sells a count from a spec + price bucket. Both have their
   own cart line types in `src/lib/cart/lines.ts`, and a bucket line sends its
   identity (`base_price`, `currency`, `storage`, `color`, `region`) in the order.
+- **Variants can have their own photos.** The API sends `images[]` (the
+  gallery, main photo first) and `variants[].image`. The product page shows the
+  gallery with thumbnails, variant chips lead with their photo, and picking a
+  variant switches the photo and is kept in the URL (`/product/12151?v=3059`),
+  so a shared link opens on that variant. Cards show the variant photos over
+  the image (hovering one previews it), and a variant's cart line carries its
+  photo. Variants without photos keep the plain name chips. The helpers are in
+  `src/lib/storefront/product-view.ts`.
 - **Product images are whatever URL was pasted into the ERP.** `next.config.ts`
   allows every host; `SafeImage` falls back to loading the URL directly if the
   optimizer can't fetch it, and to a placeholder if that fails too.

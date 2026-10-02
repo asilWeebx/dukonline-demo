@@ -9,7 +9,15 @@ import { animateToCart } from "@/lib/cart/animate-cart";
 import { useCart } from "@/lib/cart/CartProvider";
 import { unitKey } from "@/lib/cart/lines";
 import { fmtQty, isWeightUnit } from "@/lib/storefront/currency";
-import { firstAvailableUnit, getPhone, hasVariants, unitMaxQty } from "@/lib/storefront/product-view";
+import {
+  cheapestVariant,
+  firstAvailableUnit,
+  getPhone,
+  hasVariantPhotos,
+  hasVariants,
+  unitMaxQty,
+  variantImage,
+} from "@/lib/storefront/product-view";
 import type { Product } from "@/lib/storefront/types";
 
 import { IBox, ICaret, IZoomIn } from "./icons";
@@ -25,6 +33,9 @@ const CARD_SIZES =
 
 /** At or below this the stock count reads as a nudge instead of a fact. */
 const LOW_STOCK = 5;
+
+/** Variant photos shown over a card's image before the rest collapse into "+N". */
+const VARIANT_DOTS = 4;
 
 export function ProductItem({
   p,
@@ -44,11 +55,16 @@ export function ProductItem({
   const [added, setAdded] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [failedImage, setFailedImage] = useState<string | null>(null);
+  /** The variant whose photo dot is hovered or focused: the card previews it. */
+  const [previewId, setPreviewId] = useState<number | null>(null);
   const addBtnRef = useRef<HTMLButtonElement>(null);
 
   const href = `/product/${p.id}`;
   const openDetail = () => router.push(href);
-  const hasImage = showImages && isRenderableImageUrl(p.image) && failedImage !== p.image;
+  const preview = variants ? p.variants.find((v) => v.id === previewId) ?? null : null;
+  const image = preview ? variantImage(p, preview) : p.image;
+  const hasImage = showImages && isRenderableImageUrl(image) && failedImage !== image;
+  const variantDots = showImages && hasVariantPhotos(p);
 
   const unit = !variants ? p.units?.find((u) => u.unit_id === unitId) || p.units?.[0] : null;
   const isWeight = isWeightUnit(unit?.unit_name);
@@ -58,7 +74,9 @@ export function ProductItem({
   const out = variants ? !p.in_stock : maxQty <= 0;
 
   // Each price in its own currency: USD goods in $, everything else in so'm.
-  const first = variants ? p.variants[0] : unit;
+  // With variants, the cheapest in stock ("dan"), or the previewed one.
+  const cheapest = cheapestVariant(p);
+  const first = variants ? (preview ?? cheapest?.variant) : unit;
   const dispCur = first?.currency ?? "";
   const dispVal = first?.cur_price ?? first?.price ?? 0;
   const dispOrigVal = first?.cur_original_price ?? null;
@@ -85,12 +103,12 @@ export function ProductItem({
       <div className={`product-img-wrap${out ? " is-out" : ""}`}>
         {hasImage ? (
           <SafeImage
-            src={p.image}
-            alt={p.name}
+            src={image}
+            alt={preview ? `${p.name} ${preview.name}` : p.name}
             sizes={CARD_SIZES}
             eager={eager}
             fallbackSize={48}
-            onFail={() => setFailedImage(p.image)}
+            onFail={() => setFailedImage(image)}
           />
         ) : (
           <div className="image-fallback">
@@ -111,6 +129,27 @@ export function ProductItem({
           >
             <IZoomIn s={15} />
           </button>
+        )}
+        {variantDots && !out && (
+          <div className="pv-dots" onMouseLeave={() => setPreviewId(null)}>
+            {p.variants.slice(0, VARIANT_DOTS).map((v) => (
+              <Link
+                key={v.id}
+                href={`${href}?v=${v.id}`}
+                className={`pv-dot${previewId === v.id ? " active" : ""}${v.in_stock ? "" : " unavailable"}`}
+                aria-label={`${p.name}, ${v.name}`}
+                title={v.name}
+                onMouseEnter={() => setPreviewId(v.id)}
+                onFocus={() => setPreviewId(v.id)}
+                onBlur={() => setPreviewId(null)}
+              >
+                <SafeImage src={variantImage(p, v)} alt="" sizes="52px" fallbackSize={12} />
+              </Link>
+            ))}
+            {p.variants.length > VARIANT_DOTS && (
+              <span className="pv-more">+{p.variants.length - VARIANT_DOTS}</span>
+            )}
+          </div>
         )}
         {out && (
           <div className="stock-out-overlay">
@@ -153,7 +192,7 @@ export function ProductItem({
             amount={dispVal}
             currency={dispCur}
             original={dispOrigVal}
-            from={variants}
+            from={variants && !preview && Boolean(cheapest?.varies)}
             discountPercent={p.discount_percent}
             alt={dispCur ? (first?.price ?? null) : null}
           />
@@ -247,7 +286,7 @@ export function ProductItem({
         </div>
       </div>
 
-      {zoomOpen && hasImage && <ImgLightbox src={p.image} alt={p.name} onClose={() => setZoomOpen(false)} />}
+      {zoomOpen && hasImage && <ImgLightbox src={image} alt={p.name} onClose={() => setZoomOpen(false)} />}
     </article>
   );
 }

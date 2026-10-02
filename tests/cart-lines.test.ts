@@ -151,3 +151,17 @@ test("carts saved by the single-page build are accepted and cleaned", () => {
   assert.equal(cart[0].maxQty, 9999, "Infinity was saved as null");
   assert.deepEqual(sanitizeStoredCart({ not: "an array" }), []);
 });
+
+test("a variant line shows the variant's own photo, refreshed when the catalog changes it", () => {
+  const p = product({
+    id: 9,
+    has_variants: true,
+    variants: [variant({ id: 3, image: "https://cdn.example/red.jpg" }), variant({ id: 4, image: null })],
+  });
+  const cart = addVariantLine(addVariantLine([], p, p.variants[0], 1), p, p.variants[1], 1);
+  assert.equal(cart[0].image, "https://cdn.example/red.jpg");
+  assert.equal(cart[1].image, p.image, "no photo of its own: the product's");
+
+  const fresh = { ...p, variants: [{ ...p.variants[0], image: "https://cdn.example/red-2.jpg" }, p.variants[1]] };
+  assert.equal(revalidateCart(cart, [fresh])[0].image, "https://cdn.example/red-2.jpg");
+});

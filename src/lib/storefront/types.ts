@@ -64,6 +64,9 @@ export interface ProductUnit {
 export interface ProductVariant {
   id: number;
   name: string;
+  sku?: string;
+  /** The variant's own photo, or null (the product photo is used instead). */
+  image?: string | null;
   price: number;
   original_price: number | null;
   currency: string;
@@ -137,7 +140,10 @@ export interface Product {
   category_name: string | null;
   category_parent_id: number | null;
   category_parent_name: string | null;
+  /** The main photo. */
   image: string;
+  /** The whole gallery, main photo first. */
+  images?: string[];
   stock_type: StockType;
   stock: number;
   in_stock: boolean;

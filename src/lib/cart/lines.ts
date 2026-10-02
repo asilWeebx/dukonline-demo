@@ -1,5 +1,5 @@
 import { isWeightUnit } from "../storefront/currency.ts";
-import { getPhone, hasVariants, unitMaxQty } from "../storefront/product-view.ts";
+import { getPhone, hasVariants, unitMaxQty, variantImage } from "../storefront/product-view.ts";
 import type {
   OrderItemPayload,
   PhoneBucket,
@@ -94,7 +94,7 @@ export function addVariantLine(
       cur_price: variant.cur_price,
       qty: Math.min(qty, max),
       maxQty: storable(max),
-      image: p.image,
+      image: variantImage(p, variant),
     },
   ];
 }
@@ -212,7 +212,7 @@ export function revalidateCart(cart: CartItem[], products: Product[]): CartItem[
         price: v.price,
         currency: v.currency || "",
         cur_price: v.cur_price,
-        image: p.image,
+        image: variantImage(p, v),
         maxQty,
         qty: Math.min(it.qty, maxQty),
       }];
