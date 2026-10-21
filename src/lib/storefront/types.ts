@@ -184,10 +184,9 @@ export interface Customer {
   debt?: number;
   credit?: number;
   currency_debts?: Record<string, number>;
-  /** Advance-payment credit held in a foreign currency (mirrors `currency_debts`).
-   *  The storefront UI renders this map directly; `/storefront/customer/` must
-   *  include it for foreign-currency prepayments to be visible. */
-  currency_credits?: Record<string, number>;
+  /** Advance-payment balance held in a foreign currency (mirrors `currency_debts`),
+   *  e.g. `{ USD: 99.99 }`. `credit` covers so'm only. */
+  currency_advances?: Record<string, number>;
   [key: string]: unknown;
 }
 

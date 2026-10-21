@@ -1,12 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { fmtQty, groupTotal, isWeightUnit, money, som } from "../src/lib/storefront/currency.ts";
+import { fmtQty, groupTotal, isWeightUnit, money, som, somExact } from "../src/lib/storefront/currency.ts";
 
 test("so'm are rounded and grouped by thousands", () => {
   assert.equal(som(6050000), "6 050 000 so'm");
   assert.equal(som(999.6), "1 000 so'm");
   assert.equal(som(null), "0 so'm");
+});
+
+test("account balances keep tiyin so a small debt never reads as zero", () => {
+  assert.equal(somExact(0.344557044786), "0.34 so'm");
+  assert.equal(somExact(5295000), "5 295 000 so'm");
+  assert.equal(somExact(1234567.5), "1 234 567.50 so'm");
+  assert.equal(somExact(null), "0 so'm");
 });
 
 test("each price is shown in its own currency", () => {

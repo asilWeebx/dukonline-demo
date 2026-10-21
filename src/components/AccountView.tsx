@@ -255,14 +255,14 @@ function CustomerPortal({ customer, onLogout }: { customer: Customer; onLogout: 
               </div>
               <div
                 className={`portal-stat${
-                  (data.customer.credit ?? 0) > 0 || Object.keys(data.customer.currency_credits || {}).length > 0
+                  (data.customer.credit ?? 0) > 0 || Object.keys(data.customer.currency_advances || {}).length > 0
                     ? " credit"
                     : ""
                 }`}
               >
                 <div className="portal-stat-label">Ortiqcha to&apos;lov</div>
                 <div className="portal-stat-val">{som(data.customer.credit || 0)}</div>
-                {Object.entries(data.customer.currency_credits || {}).map(([currency, amount]) => (
+                {Object.entries(data.customer.currency_advances || {}).map(([currency, amount]) => (
                   <div key={currency} className="portal-stat-val" style={{ fontSize: 14, marginTop: 2 }}>
                     {money(amount, currency)}
                   </div>
