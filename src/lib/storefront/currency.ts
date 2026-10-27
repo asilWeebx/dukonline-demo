@@ -11,22 +11,34 @@ function withThousands(value: string): string {
   return value.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
+/** Two decimals, dropped for whole amounts: `1234.5 -> "1 234.50"`, `500 -> "500"`. */
+function withCents(amount: number | null | undefined): string {
+  const value = Math.round((Number(amount) || 0) * 100) / 100;
+  const [whole, fraction] = Number.isInteger(value)
+    ? [value.toString(), ""]
+    : value.toFixed(2).split(".");
+  return withThousands(whole) + (fraction ? `.${fraction}` : "");
+}
+
 /** `som(50000) -> "50 000 so'm"`. */
 export function som(amount: number | null | undefined): string {
   return withThousands(Math.round(Number(amount) || 0).toString()) + " so'm";
+}
+
+/**
+ * Account balances keep tiyin: the ERP can leave a debt of 0.34 so'm, and
+ * rounding it would show "0 so'm" on a card marked as owing.
+ */
+export function somExact(amount: number | null | undefined): string {
+  return withCents(amount) + " so'm";
 }
 
 /** `money(50, "USD") -> "$50"`, `money(50000, "") -> "50 000 so'm"`. */
 export function money(amount: number | null | undefined, currency?: string | null): string {
   if (!currency || currency === "UZS") return som(amount);
 
-  const value = Math.round((Number(amount) || 0) * 100) / 100;
-  const [whole, fraction] = Number.isInteger(value)
-    ? [value.toString(), ""]
-    : value.toFixed(2).split(".");
-
   const prefix = currency === "USD" ? "$" : `${currency} `;
-  return prefix + withThousands(whole) + (fraction ? `.${fraction}` : "");
+  return prefix + withCents(amount);
 }
 
 /**

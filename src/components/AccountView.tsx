@@ -5,7 +5,7 @@ import { FiCheck, FiCreditCard, FiFileText, FiPackage } from "react-icons/fi";
 import { useEffect, useState } from "react";
 
 import { useCustomer } from "@/lib/customer/CustomerProvider";
-import { money, som } from "@/lib/storefront/currency";
+import { money, som, somExact } from "@/lib/storefront/currency";
 import type { Customer, CustomerAccountResponse } from "@/lib/storefront/types";
 
 import { IX } from "./icons";
@@ -246,7 +246,7 @@ function CustomerPortal({ customer, onLogout }: { customer: Customer; onLogout: 
                 }`}
               >
                 <div className="portal-stat-label">Qarz</div>
-                <div className="portal-stat-val">{som(data.customer.debt || 0)}</div>
+                <div className="portal-stat-val">{somExact(data.customer.debt || 0)}</div>
                 {Object.entries(data.customer.currency_debts || {}).map(([c, a], k) => (
                   <div key={k} className="portal-stat-val" style={{ fontSize: 14, marginTop: 2 }}>
                     {a} {c}
@@ -261,7 +261,7 @@ function CustomerPortal({ customer, onLogout }: { customer: Customer; onLogout: 
                 }`}
               >
                 <div className="portal-stat-label">Ortiqcha to&apos;lov</div>
-                <div className="portal-stat-val">{som(data.customer.credit || 0)}</div>
+                <div className="portal-stat-val">{somExact(data.customer.credit || 0)}</div>
                 {Object.entries(data.customer.currency_advances || {}).map(([currency, amount]) => (
                   <div key={currency} className="portal-stat-val" style={{ fontSize: 14, marginTop: 2 }}>
                     {money(amount, currency)}
